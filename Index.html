@@ -1,0 +1,807 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><?= pageTitle ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.css" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #f7f7ef;
+        --surface: #ffffff;
+        --ink: #1e2524;
+        --muted: #5b6664;
+        --line: #d8dfdc;
+        --accent: #0a7c66;
+        --accent-soft: #e6f4f0;
+        --danger: #9f2920;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 10% -10%, #fff8d7 0%, transparent 45%),
+          radial-gradient(circle at 95% 5%, #d8f4eb 0%, transparent 35%),
+          var(--bg);
+      }
+
+      .page {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 4px 18px rgba(14, 36, 32, 0.06);
+      }
+
+      .toolbar {
+        padding: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .toolbar h1 {
+        margin: 0 auto 0 0;
+        font-size: 20px;
+        letter-spacing: 0.01em;
+      }
+
+      .control,
+      button {
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        padding: 0 10px;
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 1.2fr) minmax(320px, 1fr);
+        gap: 14px;
+      }
+      .summary-wrap {
+        padding: 12px 14px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .summary-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+        padding: 8px 10px;
+        min-width: 110px;
+      }
+      .summary-label {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .summary-value {
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      #calendar {
+        padding: 14px;
+      }
+
+      .table-wrap {
+        padding: 14px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      th, td {
+        border-bottom: 1px solid var(--line);
+        padding: 8px 6px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        font-size: 12px;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      tr:hover td {
+        background: #fafcfb;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid transparent;
+      }
+      .status-planned,
+      .status-not-started {
+        background: #eef2ff;
+        color: #3730a3;
+        border-color: #c7d2fe;
+      }
+      .status-in-progress,
+      .status-draft {
+        background: #ecfeff;
+        color: #155e75;
+        border-color: #a5f3fc;
+      }
+      .status-in-review {
+        background: #fff7ed;
+        color: #9a3412;
+        border-color: #fdba74;
+      }
+      .status-done,
+      .status-completed {
+        background: #ecfdf5;
+        color: #166534;
+        border-color: #86efac;
+      }
+      .status-blocked {
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #fca5a5;
+      }
+      .status-default {
+        background: var(--accent-soft);
+        color: #134e4a;
+        border-color: #99f6e4;
+      }
+
+      .pagination {
+        padding-top: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .pagination button {
+        height: 30px;
+        padding: 0 10px;
+      }
+      .gantt-wrap {
+        padding: 14px;
+        overflow: auto;
+      }
+      .gantt-grid {
+        border-collapse: collapse;
+        min-width: 1200px;
+        width: max-content;
+      }
+      .gantt-grid th,
+      .gantt-grid td {
+        border-bottom: 1px solid var(--line);
+        border-right: 1px solid #ecf0ef;
+        padding: 6px 8px;
+        font-size: 12px;
+        white-space: nowrap;
+        background: #fff;
+      }
+      .gantt-grid th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f9fbfa;
+        color: var(--muted);
+      }
+      .gantt-sticky-1,
+      .gantt-sticky-2 {
+        position: sticky;
+        z-index: 1;
+        background: #fff;
+      }
+      .gantt-sticky-1 { left: 0; min-width: 90px; }
+      .gantt-sticky-2 { left: 90px; min-width: 320px; max-width: 380px; }
+      .gantt-grid th.gantt-sticky-1,
+      .gantt-grid th.gantt-sticky-2 { z-index: 3; background: #f9fbfa; }
+      .gantt-cell {
+        position: relative;
+        width: 56px;
+        min-width: 56px;
+        height: 26px;
+        padding: 0;
+      }
+      .gantt-track {
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        top: 7px;
+        height: 12px;
+        border-radius: 8px;
+        background: transparent;
+      }
+      .gantt-cell.active .gantt-track { background: #9fdbc8; }
+      .gantt-cell.status-planned .gantt-track,
+      .gantt-cell.status-not-started .gantt-track { background: #c7d2fe; }
+      .gantt-cell.status-in-progress .gantt-track,
+      .gantt-cell.status-draft .gantt-track { background: #a5f3fc; }
+      .gantt-cell.status-in-review .gantt-track { background: #fdba74; }
+      .gantt-cell.status-done .gantt-track,
+      .gantt-cell.status-completed .gantt-track { background: #86efac; }
+      .gantt-cell.status-blocked .gantt-track { background: #fca5a5; }
+      .gantt-cell.start .gantt-track {
+        border-top-left-radius: 999px;
+        border-bottom-left-radius: 999px;
+      }
+      .gantt-cell.end .gantt-track {
+        border-top-right-radius: 999px;
+        border-bottom-right-radius: 999px;
+      }
+      .today-col { background: #eef4ff !important; }
+      .today-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 2px;
+        background: rgba(29, 78, 216, 0.35);
+        transform: translateX(-50%);
+      }
+      .today-dot {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #1d4ed8;
+        top: 9px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 22, 21, 0.5);
+        display: none;
+        place-items: center;
+        padding: 16px;
+      }
+
+      .modal {
+        width: min(560px, 100%);
+        background: white;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        padding: 16px;
+      }
+
+      .modal h3 {
+        margin: 0 0 6px;
+      }
+
+      .meta {
+        margin: 6px 0;
+        font-size: 13px;
+      }
+
+      .modal-close {
+        float: right;
+        margin-top: -4px;
+      }
+
+      @media (max-width: 980px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="card toolbar">
+        <h1><?= pageTitle ?></h1>
+        <input id="searchInput" class="control" placeholder="Search title, ID, tags..." />
+        <select id="ownerFilter" class="control"><option value="">All Owners</option></select>
+        <select id="deptFilter" class="control"><option value="">All Departments</option></select>
+        <select id="statusFilter" class="control"><option value="">All Statuses</option></select>
+        <button id="refreshBtn">Refresh</button>
+        <span id="statusText" class="status">Loading...</span>
+      </div>
+
+      <div class="layout">
+        <div class="card" id="calendar"></div>
+
+        <div class="card table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-sort="id">ID</th>
+                <th data-sort="title">Title</th>
+                <th data-sort="startDate">Start</th>
+                <th data-sort="endDate">End</th>
+                <th data-sort="owner">Owner</th>
+                <th data-sort="department">Department</th>
+                <th data-sort="status">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div class="pagination">
+            <span id="pageLabel"></span>
+            <div>
+              <button id="prevBtn">Prev</button>
+              <button id="nextBtn">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card summary-wrap" id="summaryWrap"></div>
+
+      <div class="card gantt-wrap">
+        <table id="ganttGrid" class="gantt-grid"></table>
+      </div>
+    </div>
+
+    <div id="modalBackdrop" class="modal-backdrop">
+      <div class="modal">
+        <button id="modalClose" class="modal-close control">Close</button>
+        <h3 id="modalTitle"></h3>
+        <div class="meta"><strong>ID:</strong> <span id="modalId"></span></div>
+        <div class="meta"><strong>Dates:</strong> <span id="modalDates"></span></div>
+        <div class="meta"><strong>Owner:</strong> <span id="modalOwner"></span></div>
+        <div class="meta"><strong>Department:</strong> <span id="modalDept"></span></div>
+        <div class="meta"><strong>Status:</strong> <span id="modalStatus"></span></div>
+        <div class="meta"><strong>Tags:</strong> <span id="modalTags"></span></div>
+        <div class="meta"><strong>Description:</strong></div>
+        <div id="modalDesc" class="meta"></div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+    <script>
+      let allItems = [];
+      let viewItems = [];
+      let sortKey = "startDate";
+      let sortDir = "asc";
+      let page = 1;
+      const pageSize = 10;
+      let calendar;
+
+      const els = {
+        tableBody: document.getElementById("tableBody"),
+        pageLabel: document.getElementById("pageLabel"),
+        prevBtn: document.getElementById("prevBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        searchInput: document.getElementById("searchInput"),
+        ownerFilter: document.getElementById("ownerFilter"),
+        deptFilter: document.getElementById("deptFilter"),
+        statusFilter: document.getElementById("statusFilter"),
+        refreshBtn: document.getElementById("refreshBtn"),
+        statusText: document.getElementById("statusText"),
+        ganttGrid: document.getElementById("ganttGrid"),
+        summaryWrap: document.getElementById("summaryWrap"),
+      };
+
+      function initCalendar() {
+        calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
+          initialView: "dayGridMonth",
+          headerToolbar: { left: "prev,next today", center: "title", right: "dayGridMonth,timeGridWeek" },
+          height: "auto",
+          events: [],
+          eventClick: (info) => openModal(info.event.extendedProps.row),
+        });
+        calendar.render();
+      }
+
+      function setStatus(message, isError) {
+        els.statusText.textContent = message;
+        els.statusText.style.color = isError ? "var(--danger)" : "var(--muted)";
+      }
+
+      function loadData(forceRefresh) {
+        setStatus("Loading data...", false);
+        google.script.run
+          .withSuccessHandler((rows) => {
+            allItems = rows || [];
+            buildFilterOptions();
+            applyFilters();
+            setStatus(`Loaded ${allItems.length} item(s).`, false);
+          })
+          .withFailureHandler((err) => {
+            setStatus(err && err.message ? err.message : "Failed to load data.", true);
+          })
+          .getScheduleItems(!!forceRefresh);
+      }
+
+      function buildFilterOptions() {
+        fillSelect(els.ownerFilter, uniqueValues("owner"), "All Owners");
+        fillSelect(els.deptFilter, uniqueValues("department"), "All Departments");
+        fillSelect(els.statusFilter, uniqueValues("status"), "All Statuses");
+      }
+
+      function fillSelect(select, values, defaultLabel) {
+        const current = select.value;
+        select.innerHTML = `<option value="">${defaultLabel}</option>`;
+        values.forEach((v) => {
+          const option = document.createElement("option");
+          option.value = v;
+          option.textContent = v;
+          select.appendChild(option);
+        });
+        if ([...select.options].some((o) => o.value === current)) {
+          select.value = current;
+        }
+      }
+
+      function uniqueValues(key) {
+        return [...new Set(allItems.map((r) => r[key]).filter(Boolean))].sort();
+      }
+
+      function applyFilters() {
+        const search = (els.searchInput.value || "").toLowerCase().trim();
+        const owner = els.ownerFilter.value;
+        const dept = els.deptFilter.value;
+        const status = els.statusFilter.value;
+
+        viewItems = allItems.filter((row) => {
+          if (owner && row.owner !== owner) return false;
+          if (dept && row.department !== dept) return false;
+          if (status && row.status !== status) return false;
+          if (!search) return true;
+          return [
+            row.id,
+            row.title,
+            row.tags,
+            row.owner,
+            row.department,
+            row.status,
+            row.description,
+          ].join(" ").toLowerCase().includes(search);
+        });
+
+        sortRows();
+        page = 1;
+        renderTable();
+        renderCalendar();
+        renderSummary();
+        renderGantt();
+      }
+
+      function sortRows() {
+        viewItems.sort((a, b) => {
+          const av = String(a[sortKey] || "").toLowerCase();
+          const bv = String(b[sortKey] || "").toLowerCase();
+          if (av < bv) return sortDir === "asc" ? -1 : 1;
+          if (av > bv) return sortDir === "asc" ? 1 : -1;
+          return 0;
+        });
+      }
+
+      function renderTable() {
+        const total = viewItems.length;
+        const pages = Math.max(1, Math.ceil(total / pageSize));
+        page = Math.min(page, pages);
+        const start = (page - 1) * pageSize;
+        const rows = viewItems.slice(start, start + pageSize);
+
+        els.tableBody.innerHTML = "";
+        rows.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(row.id)}</td>
+            <td>${escapeHtml(row.title)}</td>
+            <td>${escapeHtml(row.startDate)}</td>
+            <td>${escapeHtml(row.endDate)}</td>
+            <td>${escapeHtml(row.owner)}</td>
+            <td>${escapeHtml(row.department)}</td>
+            <td>${renderStatusBadge(row.status)}</td>
+          `;
+          tr.addEventListener("click", () => openModal(row));
+          els.tableBody.appendChild(tr);
+        });
+
+        els.pageLabel.textContent = `Page ${page} / ${pages} (${total} result${total === 1 ? "" : "s"})`;
+        els.prevBtn.disabled = page <= 1;
+        els.nextBtn.disabled = page >= pages;
+      }
+
+      function renderCalendar() {
+        if (!calendar) return;
+        calendar.removeAllEvents();
+        const events = viewItems.map((row) => ({
+          id: row.id,
+          title: row.title,
+          start: row.startDate,
+          end: addOneDay(row.endDate),
+          allDay: true,
+          color: statusColor(row.status),
+          textColor: "#10211e",
+          extendedProps: { row: row },
+        }));
+        calendar.addEventSource(events);
+      }
+
+      function addOneDay(isoDate) {
+        const d = new Date(isoDate + "T00:00:00");
+        d.setDate(d.getDate() + 1);
+        return d.toISOString().slice(0, 10);
+      }
+
+      function renderGantt() {
+        const buckets = buildHalfMonthBuckets(viewItems);
+        const today = toIsoDate(new Date());
+
+        let html = "<thead><tr>";
+        html += '<th class="gantt-sticky-1">ID</th>';
+        html += '<th class="gantt-sticky-2">Title</th>';
+        html += "<th>Owner</th><th>Status</th>";
+        buckets.forEach((b) => {
+          const cls = isBetween(today, b.start, b.end) ? "today-col" : "";
+          html += `<th class="${cls}">${escapeHtml(b.label)}</th>`;
+        });
+        html += "</tr></thead><tbody>";
+
+        viewItems.forEach((row) => {
+          html += "<tr>";
+          html += `<td class="gantt-sticky-1">${escapeHtml(row.id)}</td>`;
+          html += `<td class="gantt-sticky-2" title="${escapeHtml(row.title)}">${escapeHtml(row.title)}</td>`;
+          html += `<td>${escapeHtml(row.owner)}</td>`;
+          html += `<td>${renderStatusBadge(row.status)}</td>`;
+          buckets.forEach((b) => {
+            const active = overlaps(row.startDate, row.endDate, b.start, b.end);
+            const start = isBetween(row.startDate, b.start, b.end);
+            const end = isBetween(row.endDate, b.start, b.end);
+            const todayBucket = isBetween(today, b.start, b.end);
+            const todayInTask = todayBucket && isBetween(today, row.startDate, row.endDate);
+            let cls = "gantt-cell";
+            if (active) cls += " active";
+            if (start) cls += " start";
+            if (end) cls += " end";
+            if (todayBucket) cls += " today-col";
+            cls += " " + statusClass(row.status);
+            html += `<td class="${cls}"><div class="gantt-track"></div>`;
+            if (todayBucket) html += '<div class="today-line"></div>';
+            if (todayInTask) html += '<div class="today-dot"></div>';
+            html += "</td>";
+          });
+          html += "</tr>";
+        });
+        html += "</tbody>";
+        els.ganttGrid.innerHTML = html;
+      }
+
+      function renderSummary() {
+        const counts = { total: viewItems.length };
+        viewItems.forEach((r) => {
+          const key = statusKey(r.status) || "unknown";
+          counts[key] = (counts[key] || 0) + 1;
+        });
+
+        const cards = [
+          { label: "Total", value: counts.total, css: "status-default" },
+          { label: "Not Started", value: counts["not-started"] || 0, css: "status-not-started" },
+          { label: "Planned", value: counts["planned"] || 0, css: "status-planned" },
+          { label: "In Progress", value: counts["in-progress"] || 0, css: "status-in-progress" },
+          { label: "In Review", value: counts["in-review"] || 0, css: "status-in-review" },
+          { label: "Blocked", value: counts["blocked"] || 0, css: "status-blocked" },
+          { label: "Overdue", value: countOverdue(viewItems), css: "status-blocked" },
+          { label: "Due This Week", value: countDueThisWeek(viewItems), css: "status-in-review" },
+          { label: "Completed", value: (counts["completed"] || 0) + (counts["done"] || 0), css: "status-completed" },
+        ];
+
+        els.summaryWrap.innerHTML = cards
+          .map((c) => `
+            <div class="summary-card">
+              <div class="summary-label">${escapeHtml(c.label)}</div>
+              <div class="summary-value"><span class="status-badge ${c.css}">${c.value}</span></div>
+            </div>
+          `)
+          .join("");
+      }
+
+      function buildHalfMonthBuckets(items) {
+        const dates = [];
+        items.forEach((r) => {
+          if (r.startDate) dates.push(r.startDate);
+          if (r.endDate) dates.push(r.endDate);
+        });
+        const today = toIsoDate(new Date());
+        dates.push(today);
+        dates.sort();
+        const min = dates[0];
+        const max = dates[dates.length - 1];
+        const start = new Date(min + "T00:00:00");
+        const end = new Date(max + "T00:00:00");
+        const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate() <= 15 ? 1 : 16);
+        const buckets = [];
+        while (cursor <= end) {
+          const y = cursor.getFullYear();
+          const m = cursor.getMonth();
+          const d = cursor.getDate();
+          const sDay = d === 1 ? 1 : 16;
+          const eDay = d === 1 ? 15 : new Date(y, m + 1, 0).getDate();
+          const s = new Date(y, m, sDay);
+          const e = new Date(y, m, eDay);
+          buckets.push({
+            label: `${s.toLocaleString("en-US", { month: "short" })} ${sDay}-${eDay}`,
+            start: toIsoDate(s),
+            end: toIsoDate(e),
+          });
+          if (d === 1) {
+            cursor.setDate(16);
+          } else {
+            cursor.setMonth(cursor.getMonth() + 1);
+            cursor.setDate(1);
+          }
+        }
+        return buckets;
+      }
+
+      function overlaps(startA, endA, startB, endB) {
+        if (!startA || !endA || !startB || !endB) return false;
+        return startA <= endB && endA >= startB;
+      }
+
+      function isBetween(dateIso, startIso, endIso) {
+        if (!dateIso || !startIso || !endIso) return false;
+        return dateIso >= startIso && dateIso <= endIso;
+      }
+
+      function toIsoDate(date) {
+        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 10);
+      }
+
+      function openModal(row) {
+        document.getElementById("modalTitle").textContent = row.title || "";
+        document.getElementById("modalId").textContent = row.id || "";
+        document.getElementById("modalDates").textContent = `${row.startDate} to ${row.endDate}`;
+        document.getElementById("modalOwner").textContent = row.owner || "";
+        document.getElementById("modalDept").textContent = row.department || "";
+        document.getElementById("modalStatus").textContent = row.status || "";
+        document.getElementById("modalTags").textContent = row.tags || "";
+        document.getElementById("modalDesc").textContent = row.description || "";
+        document.getElementById("modalBackdrop").style.display = "grid";
+      }
+
+      function closeModal() {
+        document.getElementById("modalBackdrop").style.display = "none";
+      }
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function statusKey(status) {
+        return String(status || "")
+          .toLowerCase()
+          .replaceAll(/[^a-z0-9]+/g, "-")
+          .replaceAll(/^-+|-+$/g, "");
+      }
+
+      function statusClass(status) {
+        const key = statusKey(status);
+        const allowed = [
+          "planned",
+          "not-started",
+          "in-progress",
+          "draft",
+          "in-review",
+          "done",
+          "completed",
+          "blocked",
+        ];
+        return allowed.includes(key) ? `status-${key}` : "status-default";
+      }
+
+      function renderStatusBadge(status) {
+        return `<span class="status-badge ${statusClass(status)}">${escapeHtml(status || "")}</span>`;
+      }
+
+      function statusColor(status) {
+        const key = statusKey(status);
+        if (key === "planned" || key === "not-started") return "#c7d2fe";
+        if (key === "in-progress" || key === "draft") return "#a5f3fc";
+        if (key === "in-review") return "#fdba74";
+        if (key === "done" || key === "completed") return "#86efac";
+        if (key === "blocked") return "#fca5a5";
+        return "#99f6e4";
+      }
+
+      function isCompletedStatus(status) {
+        const key = statusKey(status);
+        return key === "done" || key === "completed";
+      }
+
+      function countOverdue(rows) {
+        const today = toIsoDate(new Date());
+        return rows.filter((r) => r.endDate && r.endDate < today && !isCompletedStatus(r.status)).length;
+      }
+
+      function countDueThisWeek(rows) {
+        const now = new Date();
+        const day = (now.getDay() + 6) % 7; // Monday=0
+        const start = new Date(now);
+        start.setDate(now.getDate() - day);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        const startIso = toIsoDate(start);
+        const endIso = toIsoDate(end);
+        return rows.filter((r) => r.endDate && r.endDate >= startIso && r.endDate <= endIso).length;
+      }
+
+      function bindEvents() {
+        [els.searchInput, els.ownerFilter, els.deptFilter, els.statusFilter].forEach((el) =>
+          el.addEventListener("input", applyFilters)
+        );
+        els.prevBtn.addEventListener("click", () => {
+          page -= 1;
+          renderTable();
+        });
+        els.nextBtn.addEventListener("click", () => {
+          page += 1;
+          renderTable();
+        });
+        document.querySelectorAll("th[data-sort]").forEach((th) => {
+          th.addEventListener("click", () => {
+            const key = th.dataset.sort;
+            if (sortKey === key) {
+              sortDir = sortDir === "asc" ? "desc" : "asc";
+            } else {
+              sortKey = key;
+              sortDir = "asc";
+            }
+            sortRows();
+            renderTable();
+            renderCalendar();
+            renderSummary();
+            renderGantt();
+          });
+        });
+        els.refreshBtn.addEventListener("click", () => loadData(true));
+        document.getElementById("modalClose").addEventListener("click", closeModal);
+        document.getElementById("modalBackdrop").addEventListener("click", (e) => {
+          if (e.target.id === "modalBackdrop") closeModal();
+        });
+      }
+
+      initCalendar();
+      bindEvents();
+      loadData(false);
+    </script>
+  </body>
+</html>
