@@ -29,28 +29,60 @@ const MECOE_DATE_HEADERS = [
 ];
 
 function doGet(e) {
-  const app = e && e.parameter && e.parameter.app ? String(e.parameter.app).toLowerCase() : '';
-  const isMECOE = app === 'mecoe';
-  const templateName = isMECOE ? 'IndexMECOE' : 'Index';
+  let app = e && e.parameter && e.parameter.app ? String(e.parameter.app).toLowerCase() : '';
+
+  // Auto-detect the app if no URL parameter is provided
+  if (!app) {
+    try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      if (ss) {
+        const sheets = ss.getSheets().map(s => s.getName());
+        const hasMECOE = MECOE_SHEET_CANDIDATES.some(name => sheets.indexOf(name) !== -1);
+        const hasStandard = sheets.indexOf(SHEET_NAME) !== -1;
+        
+        // If ME COE sheet exists but standard doesn't, automatically load ME COE
+        if (hasMECOE && !hasStandard) {
+          app = 'mecoe';
+        }
+      }
+    } catch (err) {
+      // Ignore if not container-bound
+    }
+  }
+
+  let isMECOE = app === 'mecoe';
+  let templateName = isMECOE ? 'IndexMECOE' : 'Index';
+  let template;
+
+  try {
+    template = HtmlService.createTemplateFromFile(templateName);
+  } catch (err) {
+    // Fallback: If the requested template is missing, try the other one
+    isMECOE = !isMECOE;
+    templateName = isMECOE ? 'IndexMECOE' : 'Index';
+    try {
+      template = HtmlService.createTemplateFromFile(templateName);
+    } catch (fallbackErr) {
+      // If neither HTML file is found, return a friendly user message
+      return HtmlService.createHtmlOutput(
+        '<div style="font-family: sans-serif; padding: 20px;">' +
+        '<h3>Setup Error</h3>' +
+        '<p>Could not find the required HTML files. Please make sure you have added either <b>Index.html</b> or <b>IndexMECOE.html</b> to your Apps Script project.</p>' +
+        '</div>'
+      ).setTitle('Configuration Error');
+    }
+  }
+
   const fallbackTitle = isMECOE ? 'ME COE Timeline Dashboard' : 'Visual Schedule Dashboard';
   const sheetNames = isMECOE ? MECOE_SHEET_CANDIDATES : [SHEET_NAME];
   const titleKey = isMECOE ? 'mecoe_title' : 'standard_title';
   const title = getDashboardTitle_(titleKey, sheetNames, fallbackTitle);
 
-  const template = createTemplateStrict_(templateName);
   template.pageTitle = title;
 
   return template.evaluate()
     .setTitle(title)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
-
-function createTemplateStrict_(name) {
-  try {
-    return HtmlService.createTemplateFromFile(name);
-  } catch (err) {
-    throw new Error('Missing HTML template: ' + name);
-  }
 }
 
 function onOpen() {
@@ -92,26 +124,22 @@ function runMECOELegacyMigrationDefault() {
 }
 
 function getScheduleItems(forceRefresh) {
-  const cache = CacheService.getScriptCache();
-  const cacheKey = 'schedule_items_v1';
-  if (!forceRefresh) {
-    const cached = cache.get(cacheKey);
-    if (cached) return JSON.parse(cached);
-  }
-
+  // Cache removed to ensure browser refreshes load live sheet edits instantly.
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   if (!sheet) {
-    throw new Error('Sheet "Schedule" not found.');
+    throw new Error(`Sheet "${SHEET_NAME}" not found.`);
   }
 
   const values = sheet.getDataRange().getValues();
-  if (!values.length) return [];
+  if (values.length <= 1) return [];
 
-  const headers = values[0].map((h) => String(h).trim());
+  // Match headers case-insensitively to prevent typo failures
+  const headers = values[0].map((h) => String(h).trim().toLowerCase());
   const headerIndex = REQUIRED_HEADERS.reduce((acc, header) => {
-    const idx = headers.indexOf(header);
+    const search = header.toLowerCase();
+    const idx = headers.indexOf(search);
     if (idx === -1) {
-      throw new Error('Missing required column: ' + header);
+      throw new Error(`Missing required column: "${header}". Please check your row 1 headers.`);
     }
     acc[header] = idx;
     return acc;
@@ -120,15 +148,22 @@ function getScheduleItems(forceRefresh) {
   const items = [];
   for (let r = 1; r < values.length; r++) {
     const row = values[r];
-    const id = String(row[headerIndex['ID']] || '').trim();
     const title = String(row[headerIndex['Title']] || '').trim();
-    const startRaw = row[headerIndex['Start Date']];
-    const endRaw = row[headerIndex['End Date']];
-    if (!id || !title || !startRaw || !endRaw) continue;
+    if (!title) continue; // Skip strictly if title is missing entirely
 
-    const startDate = normalizeDate_(startRaw);
-    const endDate = normalizeDate_(endRaw);
-    if (!startDate || !endDate || endDate < startDate) continue;
+    // Fallback: Generate an ID if the user left it blank
+    const id = String(row[headerIndex['ID']] || '').trim() || `ROW-${r + 1}`;
+    
+    let startDate = normalizeDate_(row[headerIndex['Start Date']]);
+    let endDate = normalizeDate_(row[headerIndex['End Date']]);
+
+    // Auto-heal missing or inverted dates to prevent frontend crash
+    if (startDate && !endDate) endDate = startDate;
+    if (!startDate && endDate) startDate = endDate;
+    if (!startDate || !endDate) continue; // Still skip if both dates are completely missing
+
+    // Auto-fix inverted dates instead of skipping the row
+    if (endDate < startDate) endDate = startDate;
 
     items.push({
       id: id,
@@ -143,17 +178,34 @@ function getScheduleItems(forceRefresh) {
     });
   }
 
-  cache.put(cacheKey, JSON.stringify(items), 300);
   return items;
 }
 
 function normalizeDate_(value) {
+  if (!value) return null;
   if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
     return value;
   }
-  if (typeof value === 'string') {
-    const parsed = new Date(value);
+  // Handle Excel/Sheets internal serial dates (if format gets stripped)
+  if (typeof value === 'number') {
+    return new Date(Math.round((value - 25569) * 86400 * 1000));
+  }
+  // Handle string dates robustly
+  if (typeof value === 'string' && value.trim() !== '') {
+    const str = value.trim();
+    let parsed = new Date(str);
     if (!isNaN(parsed.getTime())) return parsed;
+    
+    // Try recovering DD/MM/YYYY or DD-MM-YYYY formats
+    const parts = str.split(/[-/]/);
+    if (parts.length === 3) {
+      let d = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10) - 1;
+      let y = parseInt(parts[2], 10);
+      if (y < 100) y += 2000;
+      parsed = new Date(y, m, d);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
   }
   return null;
 }
@@ -163,13 +215,7 @@ function toIsoDate_(date) {
 }
 
 function getMECOESchedule(forceRefresh) {
-  const cache = CacheService.getScriptCache();
-  const cacheKey = 'mecoe_schedule_v1';
-  if (!forceRefresh) {
-    const cached = cache.get(cacheKey);
-    if (cached) return JSON.parse(cached);
-  }
-
+  // Cache removed to ensure live data loads properly
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = MECOE_SHEET_CANDIDATES
     .map((name) => ss.getSheetByName(name))
@@ -180,7 +226,7 @@ function getMECOESchedule(forceRefresh) {
 
   const rawValues = sheet.getDataRange().getValues();
   const displayValues = sheet.getDataRange().getDisplayValues();
-  if (!displayValues.length) {
+  if (displayValues.length <= 1) {
     return { timelineHeaders: [], timelineBuckets: [], items: [], sheetName: sheet.getName(), model: 'date' };
   }
 
@@ -192,22 +238,24 @@ function getMECOESchedule(forceRefresh) {
   const headers = displayValues[headerRowIdx].map((h) => String(h || '').trim());
   const isDateModel = isMECOEDateModel_(headers);
   let payload;
+  
   if (isDateModel) {
     payload = parseMECOEDateModel_(sheet, rawValues, displayValues, headerRowIdx, headers);
   } else {
     payload = parseMECOELegacyModel_(sheet, displayValues, headerRowIdx, headers);
   }
 
-  cache.put(cacheKey, JSON.stringify(payload), 300);
   return payload;
 }
 
 function parseMECOEDateModel_(sheet, rawValues, displayValues, headerRowIdx, headers) {
   const tz = Session.getScriptTimeZone();
+  const lowerHeaders = headers.map(h => h.toLowerCase());
+  
   const idx = {};
-  for (let i = 0; i < headers.length; i++) {
-    idx[headers[i]] = i;
-  }
+  MECOE_DATE_HEADERS.forEach(expected => {
+    idx[expected] = lowerHeaders.indexOf(expected.toLowerCase());
+  });
 
   const items = [];
   const datePoints = [];
@@ -220,13 +268,15 @@ function parseMECOEDateModel_(sheet, rawValues, displayValues, headerRowIdx, hea
     const phase = String(row[idx['Phase']] || '').trim();
     if (!deliverable && !phase) continue;
 
-    const start = normalizeDate_(rawRow[idx['Start Date']]);
-    const end = normalizeDate_(rawRow[idx['End Date']]);
-    if (!start || !end || end < start) continue;
+    let start = normalizeDate_(rawRow[idx['Start Date']]);
+    let end = normalizeDate_(rawRow[idx['End Date']]);
     const milestone = normalizeDate_(rawRow[idx['Milestone Date']]);
 
+    // Auto-fix inverted dates
+    if (start && end && end < start) end = start;
+
     const item = {
-      id: String(row[idx['ID']] || '').trim(),
+      id: String(row[idx['ID']] || '').trim() || `ROW-${r + 1}`,
       phase: phase,
       deliverable: deliverable,
       site: String(row[idx['Site']] || '').trim(),
@@ -235,12 +285,14 @@ function parseMECOEDateModel_(sheet, rawValues, displayValues, headerRowIdx, hea
       status: String(row[idx['Status']] || '').trim(),
       owner: String(row[idx['Owner']] || '').trim(),
       notes: String(row[idx['Notes / Actions']] || '').trim(),
-      startDate: toIsoDate_(start),
-      endDate: toIsoDate_(end),
+      startDate: start ? toIsoDate_(start) : '',
+      endDate: end ? toIsoDate_(end) : '',
       milestoneDate: milestone ? toIsoDate_(milestone) : '',
     };
     items.push(item);
-    datePoints.push(start, end);
+    
+    if (start) datePoints.push(start);
+    if (end) datePoints.push(end);
     if (milestone) datePoints.push(milestone);
   }
 
@@ -276,7 +328,7 @@ function parseMECOELegacyModel_(sheet, values, headerRowIdx, headers) {
     if (!rowHasContent_(row)) continue;
 
     const item = {
-      id: '',
+      id: `ROW-${r + 1}`,
       phase: String(row[0] || '').trim(),
       deliverable: String(row[1] || '').trim(),
       site: String(row[2] || '').trim(),
@@ -310,7 +362,8 @@ function parseMECOELegacyModel_(sheet, values, headerRowIdx, headers) {
 }
 
 function isMECOEDateModel_(headers) {
-  return MECOE_DATE_HEADERS.every((h) => headers.indexOf(h) !== -1);
+  const lowerHeaders = headers.map(h => h.toLowerCase());
+  return MECOE_DATE_HEADERS.every((h) => lowerHeaders.indexOf(h.toLowerCase()) !== -1);
 }
 
 function findMECOEHeaderRow_(values) {
@@ -452,18 +505,19 @@ function logStatusDateChange_(e) {
   }
   if (row <= headerRow) return;
 
-  const header = String(sheet.getRange(headerRow, col).getDisplayValue() || '').trim();
-  const watched = ['Status', 'Start Date', 'End Date', 'Milestone Date'];
+  const headerRaw = String(sheet.getRange(headerRow, col).getDisplayValue() || '').trim();
+  const header = headerRaw.toLowerCase();
+  const watched = ['status', 'start date', 'end date', 'milestone date'];
   if (watched.indexOf(header) === -1) return;
 
   const oldValue = String((e && Object.prototype.hasOwnProperty.call(e, 'oldValue')) ? e.oldValue : '').trim();
   const newValue = String(range.getDisplayValue() || '').trim();
   if (oldValue === newValue) return;
 
-  const idCol = findHeaderColumn_(sheet, headerRow, ['ID']);
+  const idCol = findHeaderColumn_(sheet, headerRow, ['id']);
   const titleCol = isStandard
-    ? findHeaderColumn_(sheet, headerRow, ['Title'])
-    : findHeaderColumn_(sheet, headerRow, ['Deliverable / Document']);
+    ? findHeaderColumn_(sheet, headerRow, ['title'])
+    : findHeaderColumn_(sheet, headerRow, ['deliverable / document']);
   const rowId = idCol > 0 ? String(sheet.getRange(row, idCol).getDisplayValue() || '').trim() : '';
   const rowTitle = titleCol > 0 ? String(sheet.getRange(row, titleCol).getDisplayValue() || '').trim() : '';
 
@@ -475,17 +529,17 @@ function logStatusDateChange_(e) {
     row,
     rowId,
     rowTitle,
-    header,
+    headerRaw,
     oldValue,
     newValue,
   ]);
 }
 
-function findHeaderColumn_(sheet, headerRow, names) {
+function findHeaderColumn_(sheet, headerRow, namesLower) {
   const headers = sheet.getRange(headerRow, 1, 1, sheet.getLastColumn()).getDisplayValues()[0];
   for (let i = 0; i < headers.length; i++) {
-    const label = String(headers[i] || '').trim();
-    if (names.indexOf(label) !== -1) return i + 1;
+    const label = String(headers[i] || '').trim().toLowerCase();
+    if (namesLower.indexOf(label) !== -1) return i + 1;
   }
   return -1;
 }

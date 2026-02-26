@@ -83,10 +83,11 @@
         color: var(--muted);
       }
 
-      .table-wrap {
+      .table-wrap, .gantt-wrap {
         overflow: auto;
-        max-height: calc(100vh - 170px);
+        max-height: 45vh;
       }
+      
       .summary-wrap {
         padding: 12px 14px;
         display: flex;
@@ -112,8 +113,15 @@
 
       table {
         border-collapse: collapse;
-        min-width: 1500px;
         width: max-content;
+      }
+
+      #tableGrid {
+        min-width: 100%;
+      }
+
+      #ganttGrid {
+        min-width: 1500px;
       }
 
       th, td {
@@ -213,14 +221,15 @@
       .gantt-cell.active .gantt-track {
         background: #9fdbc8;
       }
-      .gantt-cell.status-planned .gantt-track,
-      .gantt-cell.status-not-started .gantt-track { background: #c7d2fe; }
-      .gantt-cell.status-in-progress .gantt-track,
-      .gantt-cell.status-draft .gantt-track { background: #a5f3fc; }
-      .gantt-cell.status-in-review .gantt-track { background: #fdba74; }
-      .gantt-cell.status-done .gantt-track,
-      .gantt-cell.status-completed .gantt-track { background: #86efac; }
-      .gantt-cell.status-blocked .gantt-track { background: #fca5a5; }
+      .gantt-cell.active.status-planned .gantt-track,
+      .gantt-cell.active.status-not-started .gantt-track { background: #c7d2fe; }
+      .gantt-cell.active.status-in-progress .gantt-track,
+      .gantt-cell.active.status-draft .gantt-track { background: #a5f3fc; }
+      .gantt-cell.active.status-in-review .gantt-track { background: #fdba74; }
+      .gantt-cell.active.status-done .gantt-track,
+      .gantt-cell.active.status-completed .gantt-track { background: #86efac; }
+      .gantt-cell.active.status-blocked .gantt-track { background: #fca5a5; }
+      
       .gantt-cell.start .gantt-track {
         border-top-left-radius: 999px;
         border-bottom-left-radius: 999px;
@@ -270,7 +279,7 @@
     <div class="page">
       <div class="card toolbar">
         <h1><?= pageTitle ?></h1>
-        <input id="searchInput" class="ctrl" placeholder="Search deliverable, notes, site..." />
+        <input id="searchInput" class="ctrl" placeholder="Search deliverable, site..." />
         <select id="phaseFilter" class="ctrl"><option value="">All Phases</option></select>
         <select id="siteFilter" class="ctrl"><option value="">All Sites</option></select>
         <select id="priorityFilter" class="ctrl"><option value="">All Priorities</option></select>
@@ -279,11 +288,18 @@
         <span id="meta" class="meta">Loading...</span>
       </div>
 
-      <div class="card table-wrap">
-        <table id="grid"></table>
-      </div>
-
+      <!-- KPIs moved to the top -->
       <div class="card summary-wrap" id="summaryWrap"></div>
+
+      <!-- Main Data Table -->
+      <div class="card table-wrap">
+        <table id="tableGrid"></table>
+      </div>
+      
+      <!-- Gantt Chart View moved below the table -->
+      <div class="card gantt-wrap">
+        <table id="ganttGrid"></table>
+      </div>
 
       <div class="card legend">
         <span><strong>green bar</strong> task duration</span>
@@ -297,7 +313,8 @@
       let filtered = [];
 
       const els = {
-        grid: document.getElementById("grid"),
+        tableGrid: document.getElementById("tableGrid"),
+        ganttGrid: document.getElementById("ganttGrid"),
         meta: document.getElementById("meta"),
         searchInput: document.getElementById("searchInput"),
         phaseFilter: document.getElementById("phaseFilter"),
@@ -361,6 +378,7 @@
           if (priority && r.priority !== priority) return false;
           if (status && r.status !== status) return false;
           if (!q) return true;
+          // Note: Retained background search capabilities across all properties (including hidden ones)
           return [r.id, r.phase, r.deliverable, r.site, r.priority, r.status, r.owner, r.notes]
             .join(" ")
             .toLowerCase()
@@ -368,10 +386,32 @@
         });
 
         renderTable();
+        renderGantt();
         renderSummary();
       }
 
       function renderTable() {
+        let html = "<thead><tr>";
+        html += `<th class="sticky-1">Phase</th>`;
+        html += `<th class="sticky-2">Deliverable / Document</th>`;
+        html += "<th>Site</th><th>Priority</th><th>Status</th>";
+        html += "</tr></thead><tbody>";
+
+        filtered.forEach((r) => {
+          html += "<tr>";
+          html += `<td class="sticky-1">${escapeHtml(r.phase)}</td>`;
+          html += `<td class="sticky-2 deliverable" title="${escapeHtml(r.deliverable)}">${escapeHtml(r.deliverable)}</td>`;
+          html += `<td>${escapeHtml(r.site)}</td>`;
+          html += `<td>${escapeHtml(r.priority)}</td>`;
+          html += `<td>${renderStatusBadge(r.status)}</td>`;
+          html += "</tr>";
+        });
+
+        html += "</tbody>";
+        els.tableGrid.innerHTML = html;
+      }
+
+      function renderGantt() {
         const headers = payload.timelineHeaders || [];
         const buckets = payload.timelineBuckets || [];
         const today = payload.todayIso || "";
@@ -380,7 +420,7 @@
         let html = "<thead><tr>";
         html += `<th class="sticky-1">Phase</th>`;
         html += `<th class="sticky-2">Deliverable / Document</th>`;
-        html += "<th>Site</th><th>Priority</th><th>Status</th><th>Owner</th><th>Start</th><th>End</th><th>Milestone</th><th>Notes</th>";
+        html += "<th>Status</th>";
         headers.forEach((h, i) => {
           const cls = !isLegacy && isTodayBucket(buckets[i], today) ? "sym today-col" : "sym";
           html += `<th class="${cls}">${escapeHtml(h)}</th>`;
@@ -391,14 +431,7 @@
           html += "<tr>";
           html += `<td class="sticky-1">${escapeHtml(r.phase)}</td>`;
           html += `<td class="sticky-2 deliverable" title="${escapeHtml(r.deliverable)}">${escapeHtml(r.deliverable)}</td>`;
-          html += `<td>${escapeHtml(r.site)}</td>`;
-          html += `<td>${escapeHtml(r.priority)}</td>`;
           html += `<td>${renderStatusBadge(r.status)}</td>`;
-          html += `<td>${escapeHtml(r.owner || "")}</td>`;
-          html += `<td>${escapeHtml(r.startDate || "")}</td>`;
-          html += `<td>${escapeHtml(r.endDate || "")}</td>`;
-          html += `<td>${escapeHtml(r.milestoneDate || "")}</td>`;
-          html += `<td title="${escapeHtml(r.notes)}">${escapeHtml(r.notes)}</td>`;
 
           if (isLegacy) {
             (r.timeline || []).forEach((v) => {
@@ -430,7 +463,7 @@
         });
 
         html += "</tbody>";
-        els.grid.innerHTML = html;
+        els.ganttGrid.innerHTML = html;
       }
 
       function renderSummary() {

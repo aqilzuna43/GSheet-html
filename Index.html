@@ -248,14 +248,17 @@
         background: transparent;
       }
       .gantt-cell.active .gantt-track { background: #9fdbc8; }
-      .gantt-cell.status-planned .gantt-track,
-      .gantt-cell.status-not-started .gantt-track { background: #c7d2fe; }
-      .gantt-cell.status-in-progress .gantt-track,
-      .gantt-cell.status-draft .gantt-track { background: #a5f3fc; }
-      .gantt-cell.status-in-review .gantt-track { background: #fdba74; }
-      .gantt-cell.status-done .gantt-track,
-      .gantt-cell.status-completed .gantt-track { background: #86efac; }
-      .gantt-cell.status-blocked .gantt-track { background: #fca5a5; }
+      
+      /* Ensure status colors only apply to active cells */
+      .gantt-cell.active.status-planned .gantt-track,
+      .gantt-cell.active.status-not-started .gantt-track { background: #c7d2fe; }
+      .gantt-cell.active.status-in-progress .gantt-track,
+      .gantt-cell.active.status-draft .gantt-track { background: #a5f3fc; }
+      .gantt-cell.active.status-in-review .gantt-track { background: #fdba74; }
+      .gantt-cell.active.status-done .gantt-track,
+      .gantt-cell.active.status-completed .gantt-track { background: #86efac; }
+      .gantt-cell.active.status-blocked .gantt-track { background: #fca5a5; }
+      
       .gantt-cell.start .gantt-track {
         border-top-left-radius: 999px;
         border-bottom-left-radius: 999px;
@@ -335,6 +338,8 @@
         <span id="statusText" class="status">Loading...</span>
       </div>
 
+      <div class="card summary-wrap" id="summaryWrap"></div>
+
       <div class="layout">
         <div class="card" id="calendar"></div>
 
@@ -362,8 +367,6 @@
           </div>
         </div>
       </div>
-
-      <div class="card summary-wrap" id="summaryWrap"></div>
 
       <div class="card gantt-wrap">
         <table id="ganttGrid" class="gantt-grid"></table>
