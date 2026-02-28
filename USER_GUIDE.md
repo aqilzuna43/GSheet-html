@@ -61,18 +61,7 @@ Rules:
 - Avoid duplicates.
 - Keep 3-6 tags per row.
 
-## 4. Configure Default Source (Optional)
-
-You can preconfigure a default source in a `Config` sheet (key/value format):
-
-1. Create sheet tab `Config`.
-2. Add:
-   - `standard_source_spreadsheet_id` -> `<spreadsheet id>`
-   - `standard_source_sheet_name` -> `Schedule` (or your preferred tab)
-
-If not set, the app uses the active bound spreadsheet and `Schedule`.
-
-## 5. Deploy Web App
+## 4. Deploy Web App
 
 1. `Deploy -> New deployment`
 2. Type: `Web app`
@@ -81,31 +70,14 @@ If not set, the app uses the active bound spreadsheet and `Schedule`.
    - Who has access: your target users/domain
 4. Click `Deploy` and copy URL.
 
-## 6. Let Users Choose Source by Preference
-
-In the dashboard toolbar:
-
-1. `Source Spreadsheet ID (optional)`:
-   - Leave blank to use configured default/active spreadsheet.
-   - You can paste either:
-     - Spreadsheet ID only, or
-     - Full Google Sheets URL (ID is extracted automatically).
-2. `Source Sheet`:
-   - Enter sheet tab name (for example `Schedule`).
-3. Click `Apply Source`.
-
-Behavior:
-- Preference is saved in browser local storage per user/browser.
-- `Reset Source` clears personal preference and reverts to configured default.
-
-## 7. Embed in Google Sites
+## 5. Embed in Google Sites
 
 1. Open Google Sites.
 2. `Insert -> Embed -> By URL`.
 3. Paste web app URL.
 4. Publish.
 
-## 8. Troubleshooting
+## 6. Troubleshooting
 
 1. `Could not find Index.html`
    - Add/save `Index.html` in Apps Script.
@@ -113,15 +85,10 @@ Behavior:
 2. `Missing required column: ...`
    - Fix row-1 headers to match required schema exactly.
 
-3. `Cannot open source spreadsheet by ID`
-   - Check sharing permissions for the account running the web app.
-   - Confirm the ID/URL points to a real Google Sheet.
-   - Click `Reset Source` to clear saved local preference if needed.
+3. `Sheet "X" not found`
+   - Verify that your spreadsheet actually has a tab named exactly "Schedule".
 
-4. `Sheet "X" not found`
-   - Verify source sheet tab name.
-
-## 9. Important Deployment Rule
+## 7. Important Deployment Rule
 
 This guide is for general pilot only.  
 Do not include `CodeMECOE.gs` / `IndexMECOE.html` in this Apps Script project.

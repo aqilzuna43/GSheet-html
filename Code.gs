@@ -27,10 +27,8 @@ function doGet() {
   }
 
   const title = getDashboardTitle_('standard_title', [SHEET_NAME], 'Visual Schedule Dashboard');
-  const source = getGeneralSourceConfig_();
   template.pageTitle = title;
-  template.defaultSourceSpreadsheetId = source.spreadsheetId || '';
-  template.defaultSourceSheetName = source.sheetName || SHEET_NAME;
+  template.defaultSourceSheetName = SHEET_NAME;
 
   return template.evaluate()
     .setTitle(title)
@@ -53,11 +51,11 @@ function onEdit(e) {
   logStatusDateChange_(e);
 }
 
-function getScheduleItems(forceRefresh, sourcePrefs) {
-  const source = resolveGeneralSource_(sourcePrefs);
+function getScheduleItems(forceRefresh) {
+  const source = resolveGeneralSource_();
   const sheet = source.sheet;
   if (!sheet) {
-    throw new Error('Source sheet not found. Check spreadsheet ID and sheet name.');
+    throw new Error(`Source sheet "${SHEET_NAME}" not found. Please ensure it exists.`);
   }
 
   const values = sheet.getDataRange().getValues();
@@ -103,68 +101,23 @@ function getScheduleItems(forceRefresh, sourcePrefs) {
   return items;
 }
 
-function getGeneralSourceDefaults() {
-  const source = getGeneralSourceConfig_();
-  return {
-    spreadsheetId: source.spreadsheetId || '',
-    sheetName: source.sheetName || SHEET_NAME,
-  };
-}
-
-function resolveGeneralSource_(sourcePrefs) {
-  const config = getGeneralSourceConfig_();
-  const pref = sourcePrefs && typeof sourcePrefs === 'object' ? sourcePrefs : {};
-  const requestedSpreadsheetId = normalizeSpreadsheetIdInput_(String(pref.spreadsheetId || '').trim());
-  const requestedSheetName = String(pref.sheetName || '').trim();
-
-  const spreadsheetId = requestedSpreadsheetId || normalizeSpreadsheetIdInput_(config.spreadsheetId || '') || '';
-  const sheetName = requestedSheetName || config.sheetName || SHEET_NAME;
-
-  let spreadsheet;
-  if (spreadsheetId) {
-    try {
-      spreadsheet = SpreadsheetApp.openById(spreadsheetId);
-    } catch (err) {
-      throw new Error(
-        'Cannot open source spreadsheet. Use a valid Spreadsheet ID (or Google Sheets URL), ensure access is shared, or click Reset Source.'
-      );
-    }
-  } else {
-    spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  }
+function resolveGeneralSource_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   if (!spreadsheet) {
-    throw new Error('No spreadsheet context found.');
+    throw new Error('No active spreadsheet context found. This script must be bound to a Google Sheet.');
   }
 
-  const sheet = spreadsheet.getSheetByName(sheetName);
+  const sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (!sheet) {
-    throw new Error(`Sheet "${sheetName}" not found in spreadsheet "${spreadsheet.getName()}".`);
+    throw new Error(`Sheet "${SHEET_NAME}" not found in spreadsheet "${spreadsheet.getName()}".`);
   }
 
   return {
     spreadsheet: spreadsheet,
     sheet: sheet,
     spreadsheetId: spreadsheet.getId(),
-    sheetName: sheetName,
+    sheetName: SHEET_NAME,
   };
-}
-
-function getGeneralSourceConfig_() {
-  const values = getConfigKeyValues_();
-  const spreadsheetId = normalizeSpreadsheetIdInput_(String(values['standard_source_spreadsheet_id'] || '').trim());
-  const sheetName = String(values['standard_source_sheet_name'] || '').trim();
-  return {
-    spreadsheetId: spreadsheetId,
-    sheetName: sheetName || SHEET_NAME,
-  };
-}
-
-function normalizeSpreadsheetIdInput_(input) {
-  const raw = String(input || '').trim();
-  if (!raw) return '';
-  const match = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/i);
-  const candidate = match && match[1] ? match[1] : raw;
-  return /^[a-zA-Z0-9-_]{20,}$/.test(candidate) ? candidate : raw;
 }
 
 function getConfigKeyValues_() {

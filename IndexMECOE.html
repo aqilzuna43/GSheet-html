@@ -1,589 +1,675 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title><?= pageTitle ?></title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-    <style>
-      :root {
-        --bg: #f6f6f1;
-        --ink: #16201f;
-        --muted: #5d6866;
-        --line: #d2d9d6;
-        --surface: #ffffff;
-        --accent: #0f7660;
-        --start: #6c757d;
-        --run: #15803d;
-        --now: #1d4ed8;
-        --milestone: #c2410c;
-        --today-col: #eef4ff;
-      }
 
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        font-family: "Space Grotesk", sans-serif;
-        color: var(--ink);
-        background:
-          radial-gradient(circle at 8% -10%, #fff6cc 0%, transparent 45%),
-          radial-gradient(circle at 90% 5%, #ddf7ef 0%, transparent 40%),
-          var(--bg);
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>
+    <?= pageTitle ?>
+  </title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f6f6f1;
+      --ink: #16201f;
+      --muted: #5d6866;
+      --line: #d2d9d6;
+      --surface: #ffffff;
+      --accent: #0f7660;
+      --start: #6c757d;
+      --run: #15803d;
+      --now: #1d4ed8;
+      --milestone: #c2410c;
+      --today-col: #eef4ff;
+    }
 
-      .page {
-        max-width: 98vw;
-        margin: 0 auto;
-        padding: 14px;
-        display: grid;
-        gap: 12px;
-      }
+    * {
+      box-sizing: border-box;
+    }
 
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        box-shadow: 0 4px 14px rgba(16, 31, 28, 0.05);
-      }
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% -10%, #fff6cc 0%, transparent 45%),
+        radial-gradient(circle at 90% 5%, #ddf7ef 0%, transparent 40%),
+        var(--bg);
+    }
 
-      .toolbar {
-        padding: 12px;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-      }
+    .page {
+      max-width: 98vw;
+      margin: 0 auto;
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
 
-      .toolbar h1 {
-        margin: 0 auto 0 0;
-        font-size: 20px;
-      }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(16, 31, 28, 0.05);
+    }
 
-      .ctrl, button {
-        height: 34px;
-        border-radius: 10px;
-        border: 1px solid var(--line);
-        background: #fff;
-        color: var(--ink);
-        padding: 0 10px;
-        font: inherit;
-      }
+    .toolbar {
+      padding: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
 
-      button {
-        cursor: pointer;
-        background: var(--accent);
-        color: #fff;
-        border-color: var(--accent);
-      }
+    .toolbar h1 {
+      margin: 0 auto 0 0;
+      font-size: 20px;
+    }
 
-      .meta {
-        font-size: 12px;
-        color: var(--muted);
-      }
+    .ctrl,
+    button {
+      height: 34px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      padding: 0 10px;
+      font: inherit;
+    }
 
-      .table-wrap, .gantt-wrap {
-        overflow: auto;
-        max-height: 45vh;
-      }
-      
-      .summary-wrap {
-        padding: 12px 14px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-      .summary-card {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #fff;
-        padding: 8px 10px;
-        min-width: 110px;
-      }
-      .summary-label {
-        font-size: 11px;
-        color: var(--muted);
-      }
-      .summary-value {
-        font-size: 20px;
-        font-weight: 700;
-        line-height: 1.1;
-      }
+    button {
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
 
-      table {
-        border-collapse: collapse;
-        width: max-content;
-      }
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-      #tableGrid {
-        min-width: 100%;
-      }
+    .table-wrap,
+    .gantt-wrap {
+      overflow: auto;
+      max-height: 45vh;
+    }
 
-      #ganttGrid {
-        min-width: 1500px;
-      }
+    .summary-wrap {
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-      th, td {
-        border-bottom: 1px solid var(--line);
-        border-right: 1px solid #ecf0ef;
-        padding: 6px 8px;
-        font-size: 12px;
-        white-space: nowrap;
-        background: #fff;
-      }
+    .summary-card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 8px 10px;
+      min-width: 110px;
+    }
 
-      th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        background: #f9fbfa;
-        color: var(--muted);
-      }
+    .summary-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
 
-      .sticky-1, .sticky-2 {
-        position: sticky;
-        z-index: 1;
-        background: #fff;
-      }
+    .summary-value {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
 
-      .sticky-1 { left: 0; min-width: 70px; }
-      .sticky-2 { left: 70px; min-width: 360px; max-width: 420px; }
-      th.sticky-1, th.sticky-2 { z-index: 3; background: #f9fbfa; }
+    table {
+      border-collapse: collapse;
+      width: max-content;
+    }
 
-      .sym {
-        width: 56px;
-        text-align: center;
-        font-weight: 700;
-      }
+    #tableGrid {
+      min-width: 100%;
+    }
 
-      .sym-start { color: var(--start); }
-      .sym-run { color: var(--run); }
-      .sym-now { color: var(--now); }
-      .sym-milestone { color: var(--milestone); }
-      .today-col { background: var(--today-col); }
-      .status-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 999px;
-        font-size: 12px;
-        border: 1px solid transparent;
-      }
-      .status-planned,
-      .status-not-started {
-        background: #eef2ff;
-        color: #3730a3;
-        border-color: #c7d2fe;
-      }
-      .status-in-progress,
-      .status-draft {
-        background: #ecfeff;
-        color: #155e75;
-        border-color: #a5f3fc;
-      }
-      .status-in-review {
-        background: #fff7ed;
-        color: #9a3412;
-        border-color: #fdba74;
-      }
-      .status-done,
-      .status-completed {
-        background: #ecfdf5;
-        color: #166534;
-        border-color: #86efac;
-      }
-      .status-blocked {
-        background: #fef2f2;
-        color: #991b1b;
-        border-color: #fca5a5;
-      }
-      .status-default {
-        background: #e6f4f0;
-        color: #134e4a;
-        border-color: #99f6e4;
-      }
-      .gantt-cell {
-        position: relative;
-        width: 56px;
-        min-width: 56px;
-        height: 26px;
-        padding: 0;
-      }
-      .gantt-track {
-        position: absolute;
-        left: 4px;
-        right: 4px;
-        top: 7px;
-        height: 12px;
-        border-radius: 8px;
-        background: transparent;
-      }
-      .gantt-cell.active .gantt-track {
-        background: #9fdbc8;
-      }
-      .gantt-cell.active.status-planned .gantt-track,
-      .gantt-cell.active.status-not-started .gantt-track { background: #c7d2fe; }
-      .gantt-cell.active.status-in-progress .gantt-track,
-      .gantt-cell.active.status-draft .gantt-track { background: #a5f3fc; }
-      .gantt-cell.active.status-in-review .gantt-track { background: #fdba74; }
-      .gantt-cell.active.status-done .gantt-track,
-      .gantt-cell.active.status-completed .gantt-track { background: #86efac; }
-      .gantt-cell.active.status-blocked .gantt-track { background: #fca5a5; }
-      
-      .gantt-cell.start .gantt-track {
-        border-top-left-radius: 999px;
-        border-bottom-left-radius: 999px;
-      }
-      .gantt-cell.end .gantt-track {
-        border-top-right-radius: 999px;
-        border-bottom-right-radius: 999px;
-      }
-      .gantt-dot {
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        top: 9px;
-        left: 50%;
-        transform: translateX(-50%);
-      }
-      .milestone-dot { background: var(--milestone); }
-      .today-dot { background: var(--now); }
-      .today-line {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 50%;
-        width: 2px;
-        background: rgba(29, 78, 216, 0.35);
-        transform: translateX(-50%);
-      }
+    #ganttGrid {
+      min-width: 1500px;
+    }
 
-      .deliverable {
-        max-width: 420px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid #ecf0ef;
+      padding: 6px 8px;
+      font-size: 12px;
+      white-space: nowrap;
+      background: #fff;
+    }
 
-      .legend {
-        padding: 0 12px 10px;
-        font-size: 12px;
-        color: var(--muted);
-        display: flex;
-        gap: 16px;
-        flex-wrap: wrap;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="page">
-      <div class="card toolbar">
-        <h1><?= pageTitle ?></h1>
-        <input id="searchInput" class="ctrl" placeholder="Search deliverable, site..." />
-        <select id="phaseFilter" class="ctrl"><option value="">All Phases</option></select>
-        <select id="siteFilter" class="ctrl"><option value="">All Sites</option></select>
-        <select id="priorityFilter" class="ctrl"><option value="">All Priorities</option></select>
-        <select id="statusFilter" class="ctrl"><option value="">All Statuses</option></select>
-        <button id="refreshBtn">Refresh</button>
-        <span id="meta" class="meta">Loading...</span>
-      </div>
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: #f9fbfa;
+      color: var(--muted);
+    }
 
-      <!-- KPIs moved to the top -->
-      <div class="card summary-wrap" id="summaryWrap"></div>
+    .sticky-1,
+    .sticky-2 {
+      position: sticky;
+      z-index: 1;
+      background: #fff;
+    }
 
-      <!-- Main Data Table -->
-      <div class="card table-wrap">
-        <table id="tableGrid"></table>
-      </div>
-      
-      <!-- Gantt Chart View moved below the table -->
-      <div class="card gantt-wrap">
-        <table id="ganttGrid"></table>
-      </div>
+    .sticky-1 {
+      left: 0;
+      min-width: 70px;
+    }
 
-      <div class="card legend">
-        <span><strong>green bar</strong> task duration</span>
-        <span><strong>red dot</strong> milestone</span>
-        <span><strong>blue line/dot</strong> today benchmark</span>
-      </div>
+    .sticky-2 {
+      left: 70px;
+      min-width: 360px;
+      max-width: 420px;
+    }
+
+    th.sticky-1,
+    th.sticky-2 {
+      z-index: 3;
+      background: #f9fbfa;
+    }
+
+    .sym {
+      width: 56px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .sym-start {
+      color: var(--start);
+    }
+
+    .sym-run {
+      color: var(--run);
+    }
+
+    .sym-now {
+      color: var(--now);
+    }
+
+    .sym-milestone {
+      color: var(--milestone);
+    }
+
+    .today-col {
+      background: var(--today-col);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid transparent;
+    }
+
+    .status-planned,
+    .status-not-started {
+      background: #eef2ff;
+      color: #3730a3;
+      border-color: #c7d2fe;
+    }
+
+    .status-in-progress,
+    .status-draft {
+      background: #ecfeff;
+      color: #155e75;
+      border-color: #a5f3fc;
+    }
+
+    .status-in-review {
+      background: #fff7ed;
+      color: #9a3412;
+      border-color: #fdba74;
+    }
+
+    .status-done,
+    .status-completed {
+      background: #ecfdf5;
+      color: #166534;
+      border-color: #86efac;
+    }
+
+    .status-blocked {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fca5a5;
+    }
+
+    .status-default {
+      background: #e6f4f0;
+      color: #134e4a;
+      border-color: #99f6e4;
+    }
+
+    .gantt-cell {
+      position: relative;
+      width: 56px;
+      min-width: 56px;
+      height: 26px;
+      padding: 0;
+    }
+
+    .gantt-track {
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      top: 7px;
+      height: 12px;
+      border-radius: 8px;
+      background: transparent;
+    }
+
+    .gantt-cell.active .gantt-track {
+      background: #9fdbc8;
+    }
+
+    .gantt-cell.active.status-planned .gantt-track,
+    .gantt-cell.active.status-not-started .gantt-track {
+      background: #c7d2fe;
+    }
+
+    .gantt-cell.active.status-in-progress .gantt-track,
+    .gantt-cell.active.status-draft .gantt-track {
+      background: #a5f3fc;
+    }
+
+    .gantt-cell.active.status-in-review .gantt-track {
+      background: #fdba74;
+    }
+
+    .gantt-cell.active.status-done .gantt-track,
+    .gantt-cell.active.status-completed .gantt-track {
+      background: #86efac;
+    }
+
+    .gantt-cell.active.status-blocked .gantt-track {
+      background: #fca5a5;
+    }
+
+    .gantt-cell.start .gantt-track {
+      border-top-left-radius: 999px;
+      border-bottom-left-radius: 999px;
+    }
+
+    .gantt-cell.end .gantt-track {
+      border-top-right-radius: 999px;
+      border-bottom-right-radius: 999px;
+    }
+
+    .gantt-dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      top: 9px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .milestone-dot {
+      background: var(--milestone);
+    }
+
+    .today-dot {
+      background: var(--now);
+    }
+
+    .today-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: rgba(29, 78, 216, 0.35);
+      transform: translateX(-50%);
+    }
+
+    .deliverable {
+      max-width: 420px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .legend {
+      padding: 0 12px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="card toolbar">
+      <h1>
+        <?= pageTitle ?>
+      </h1>
+      <input id="searchInput" class="ctrl" placeholder="Search deliverable, site..." />
+      <select id="phaseFilter" class="ctrl">
+        <option value="">All Phases</option>
+      </select>
+      <select id="siteFilter" class="ctrl">
+        <option value="">All Sites</option>
+      </select>
+      <select id="priorityFilter" class="ctrl">
+        <option value="">All Priorities</option>
+      </select>
+      <select id="statusFilter" class="ctrl">
+        <option value="">All Statuses</option>
+      </select>
+      <button id="refreshBtn">Refresh</button>
+      <span id="meta" class="meta">Loading...</span>
     </div>
 
-    <script>
-      let payload = { model: "date", timelineHeaders: [], timelineBuckets: [], items: [], todayIso: "" };
-      let filtered = [];
+    <!-- KPIs moved to the top -->
+    <div class="card summary-wrap" id="summaryWrap"></div>
 
-      const els = {
-        tableGrid: document.getElementById("tableGrid"),
-        ganttGrid: document.getElementById("ganttGrid"),
-        meta: document.getElementById("meta"),
-        searchInput: document.getElementById("searchInput"),
-        phaseFilter: document.getElementById("phaseFilter"),
-        siteFilter: document.getElementById("siteFilter"),
-        priorityFilter: document.getElementById("priorityFilter"),
-        statusFilter: document.getElementById("statusFilter"),
-        refreshBtn: document.getElementById("refreshBtn"),
-        summaryWrap: document.getElementById("summaryWrap"),
-      };
+    <!-- Main Data Table -->
+    <div class="card table-wrap">
+      <table id="tableGrid"></table>
+    </div>
 
-      function load(force) {
-        els.meta.textContent = "Loading...";
-        google.script.run
-          .withSuccessHandler((data) => {
-            payload = data || { model: "date", timelineHeaders: [], timelineBuckets: [], items: [], todayIso: "" };
-            buildFilters();
-            applyFilters();
-            const count = payload.items ? payload.items.length : 0;
-            const modelLabel = payload.model === "date" ? "date model" : "legacy model";
-            els.meta.textContent = `${payload.sheetName || ""} | ${count} rows | ${modelLabel} | ${payload.updatedAt || ""}`;
-          })
-          .withFailureHandler((err) => {
-            els.meta.textContent = (err && err.message) ? err.message : "Failed to load data.";
-          })
-          .getMECOESchedule(!!force);
-      }
+    <!-- Gantt Chart View moved below the table -->
+    <div class="card gantt-wrap">
+      <table id="ganttGrid"></table>
+    </div>
 
-      function buildFilters() {
-        fillSelect(els.phaseFilter, uniqueVals("phase"), "All Phases");
-        fillSelect(els.siteFilter, uniqueVals("site"), "All Sites");
-        fillSelect(els.priorityFilter, uniqueVals("priority"), "All Priorities");
-        fillSelect(els.statusFilter, uniqueVals("status"), "All Statuses");
-      }
+    <div class="card legend">
+      <span><strong>green bar</strong> task duration</span>
+      <span><strong>red dot</strong> milestone</span>
+      <span><strong>blue line/dot</strong> today benchmark</span>
+    </div>
+  </div>
 
-      function fillSelect(select, values, label) {
-        const keep = select.value;
-        select.innerHTML = `<option value="">${label}</option>`;
-        values.forEach((v) => {
-          const o = document.createElement("option");
-          o.value = v;
-          o.textContent = v;
-          select.appendChild(o);
-        });
-        if ([...select.options].some((o) => o.value === keep)) select.value = keep;
-      }
+  <script>
+    let payload = { model: "date", timelineHeaders: [], timelineBuckets: [], items: [], todayIso: "" };
+    let filtered = [];
 
-      function uniqueVals(key) {
-        return [...new Set((payload.items || []).map((r) => r[key]).filter(Boolean))].sort();
-      }
+    const els = {
+      tableGrid: document.getElementById("tableGrid"),
+      ganttGrid: document.getElementById("ganttGrid"),
+      meta: document.getElementById("meta"),
+      searchInput: document.getElementById("searchInput"),
+      phaseFilter: document.getElementById("phaseFilter"),
+      siteFilter: document.getElementById("siteFilter"),
+      priorityFilter: document.getElementById("priorityFilter"),
+      statusFilter: document.getElementById("statusFilter"),
+      refreshBtn: document.getElementById("refreshBtn"),
+      summaryWrap: document.getElementById("summaryWrap"),
+    };
 
-      function applyFilters() {
-        const q = (els.searchInput.value || "").trim().toLowerCase();
-        const phase = els.phaseFilter.value;
-        const site = els.siteFilter.value;
-        const priority = els.priorityFilter.value;
-        const status = els.statusFilter.value;
+    function load(force) {
+      els.meta.textContent = "Loading...";
+      google.script.run
+        .withSuccessHandler((data) => {
+          payload = data || { model: "date", timelineHeaders: [], timelineBuckets: [], items: [], todayIso: "" };
+          buildFilters();
+          applyFilters();
+          const count = payload.items ? payload.items.length : 0;
+          const modelLabel = payload.model === "date" ? "date model" : "legacy model";
+          els.meta.textContent = `${payload.sheetName || ""} | ${count} rows | ${modelLabel} | ${payload.updatedAt || ""}`;
+        })
+        .withFailureHandler((err) => {
+          els.meta.textContent = (err && err.message) ? err.message : "Failed to load data.";
+        })
+        .getMECOESchedule(!!force);
+    }
 
-        filtered = (payload.items || []).filter((r) => {
-          if (phase && r.phase !== phase) return false;
-          if (site && r.site !== site) return false;
-          if (priority && r.priority !== priority) return false;
-          if (status && r.status !== status) return false;
-          if (!q) return true;
-          // Note: Retained background search capabilities across all properties (including hidden ones)
-          return [r.id, r.phase, r.deliverable, r.site, r.priority, r.status, r.owner, r.notes]
-            .join(" ")
-            .toLowerCase()
-            .includes(q);
-        });
+    function buildFilters() {
+      fillSelect(els.phaseFilter, uniqueVals("phase"), "All Phases");
+      fillSelect(els.siteFilter, uniqueVals("site"), "All Sites");
+      fillSelect(els.priorityFilter, uniqueVals("priority"), "All Priorities");
+      fillSelect(els.statusFilter, uniqueVals("status"), "All Statuses");
+    }
 
-        renderTable();
-        renderGantt();
-        renderSummary();
-      }
+    function fillSelect(select, values, label) {
+      const keep = select.value;
+      select.innerHTML = `<option value="">${label}</option>`;
+      values.forEach((v) => {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        select.appendChild(o);
+      });
+      if ([...select.options].some((o) => o.value === keep)) select.value = keep;
+    }
 
-      function renderTable() {
-        let html = "<thead><tr>";
-        html += `<th class="sticky-1">Phase</th>`;
-        html += `<th class="sticky-2">Deliverable / Document</th>`;
-        html += "<th>Site</th><th>Priority</th><th>Status</th>";
-        html += "</tr></thead><tbody>";
+    function uniqueVals(key) {
+      return [...new Set((payload.items || []).map((r) => r[key]).filter(Boolean))].sort();
+    }
 
-        filtered.forEach((r) => {
-          html += "<tr>";
-          html += `<td class="sticky-1">${escapeHtml(r.phase)}</td>`;
-          html += `<td class="sticky-2 deliverable" title="${escapeHtml(r.deliverable)}">${escapeHtml(r.deliverable)}</td>`;
-          html += `<td>${escapeHtml(r.site)}</td>`;
-          html += `<td>${escapeHtml(r.priority)}</td>`;
-          html += `<td>${renderStatusBadge(r.status)}</td>`;
-          html += "</tr>";
-        });
+    function applyFilters() {
+      const q = (els.searchInput.value || "").trim().toLowerCase();
+      const phase = els.phaseFilter.value;
+      const site = els.siteFilter.value;
+      const priority = els.priorityFilter.value;
+      const status = els.statusFilter.value;
 
-        html += "</tbody>";
-        els.tableGrid.innerHTML = html;
-      }
+      filtered = (payload.items || []).filter((r) => {
+        if (phase && r.phase !== phase) return false;
+        if (site && r.site !== site) return false;
+        if (priority && r.priority !== priority) return false;
+        if (status && r.status !== status) return false;
+        if (!q) return true;
+        // Note: Retained background search capabilities across all properties (including hidden ones)
+        return [r.id, r.phase, r.deliverable, r.site, r.priority, r.status, r.owner, r.notes]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      });
 
-      function renderGantt() {
-        const headers = payload.timelineHeaders || [];
-        const buckets = payload.timelineBuckets || [];
-        const today = payload.todayIso || "";
-        const isLegacy = payload.model === "legacy";
+      renderTable();
+      renderGantt();
+      renderSummary();
+    }
 
-        let html = "<thead><tr>";
-        html += `<th class="sticky-1">Phase</th>`;
-        html += `<th class="sticky-2">Deliverable / Document</th>`;
-        html += "<th>Status</th>";
-        headers.forEach((h, i) => {
-          const cls = !isLegacy && isTodayBucket(buckets[i], today) ? "sym today-col" : "sym";
-          html += `<th class="${cls}">${escapeHtml(h)}</th>`;
-        });
-        html += "</tr></thead><tbody>";
+    function renderTable() {
+      let html = "<thead><tr>";
+      html += `<th class="sticky-1">Phase</th>`;
+      html += `<th class="sticky-2">Deliverable / Document</th>`;
+      html += "<th>Site</th><th>Priority</th><th>Status</th>";
+      html += "</tr></thead><tbody>";
 
-        filtered.forEach((r) => {
-          html += "<tr>";
-          html += `<td class="sticky-1">${escapeHtml(r.phase)}</td>`;
-          html += `<td class="sticky-2 deliverable" title="${escapeHtml(r.deliverable)}">${escapeHtml(r.deliverable)}</td>`;
-          html += `<td>${renderStatusBadge(r.status)}</td>`;
+      filtered.forEach((r) => {
+        html += "<tr>";
+        html += `<td class="sticky-1">${escapeHtml(r.phase)}</td>`;
+        html += `<td class="sticky-2 deliverable" title="${escapeHtml(r.deliverable)}">${escapeHtml(r.deliverable)}</td>`;
+        html += `<td>${escapeHtml(r.site)}</td>`;
+        html += `<td>${escapeHtml(r.priority)}</td>`;
+        html += `<td>${renderStatusBadge(r.status)}</td>`;
+        html += "</tr>";
+      });
 
-          if (isLegacy) {
-            (r.timeline || []).forEach((v) => {
-              html += `<td class="sym ${symbolClass(v)}">${escapeHtml(v)}</td>`;
-            });
-          } else {
-            buckets.forEach((b) => {
-              const active = overlaps(r.startDate, r.endDate, b.start, b.end);
-              const start = isBetween(r.startDate, b.start, b.end);
-              const end = isBetween(r.endDate, b.start, b.end);
-              const milestone = isBetween(r.milestoneDate, b.start, b.end);
-              const todayBucket = isTodayBucket(b, today);
-              const todayInTask = todayBucket && isBetween(today, r.startDate, r.endDate);
-              let cls = "gantt-cell";
-              if (active) cls += " active";
-              if (start) cls += " start";
-              if (end) cls += " end";
-              if (todayBucket) cls += " today-col";
-              cls += " " + statusClass(r.status);
-              html += `<td class="${cls}">`;
-              html += `<div class="gantt-track"></div>`;
-              if (todayBucket) html += `<div class="today-line"></div>`;
-              if (todayInTask) html += `<div class="gantt-dot today-dot"></div>`;
-              if (milestone) html += `<div class="gantt-dot milestone-dot"></div>`;
-              html += `</td>`;
-            });
-          }
-          html += "</tr>";
-        });
+      html += "</tbody>";
+      els.tableGrid.innerHTML = html;
+    }
 
-        html += "</tbody>";
-        els.ganttGrid.innerHTML = html;
-      }
+    function renderGantt() {
+      const headers = payload.timelineHeaders || [];
+      const buckets = payload.timelineBuckets || [];
+      const today = payload.todayIso || "";
+      const isLegacy = payload.model === "legacy";
 
-      function renderSummary() {
-        const counts = { total: filtered.length };
-        filtered.forEach((r) => {
-          const key = statusKey(r.status) || "unknown";
-          counts[key] = (counts[key] || 0) + 1;
-        });
+      let html = "<thead><tr>";
+      html += `<th class="sticky-1">Phase</th>`;
+      html += `<th class="sticky-2">Deliverable / Document</th>`;
+      html += "<th>Status</th>";
+      headers.forEach((h, i) => {
+        const cls = !isLegacy && isTodayBucket(buckets[i], today) ? "sym today-col" : "sym";
+        html += `<th class="${cls}">${escapeHtml(h)}</th>`;
+      });
+      html += "</tr></thead><tbody>";
 
-        const cards = [
-          { label: "Total", value: counts.total, css: "status-default" },
-          { label: "Not Started", value: counts["not-started"] || 0, css: "status-not-started" },
-          { label: "Planned", value: counts["planned"] || 0, css: "status-planned" },
-          { label: "In Progress", value: counts["in-progress"] || 0, css: "status-in-progress" },
-          { label: "In Review", value: counts["in-review"] || 0, css: "status-in-review" },
-          { label: "Blocked", value: counts["blocked"] || 0, css: "status-blocked" },
-          { label: "Overdue", value: countOverdue(filtered), css: "status-blocked" },
-          { label: "Due This Week", value: countDueThisWeek(filtered), css: "status-in-review" },
-          { label: "Completed", value: (counts["completed"] || 0) + (counts["done"] || 0), css: "status-completed" },
-        ];
+      filtered.forEach((r) => {
+        html += "<tr>";
+        html += `<td class="sticky-1">${escapeHtml(r.phase)}</td>`;
+        html += `<td class="sticky-2 deliverable" title="${escapeHtml(r.deliverable)}">${escapeHtml(r.deliverable)}</td>`;
+        html += `<td>${renderStatusBadge(r.status)}</td>`;
 
-        els.summaryWrap.innerHTML = cards
-          .map((c) => `
+        if (isLegacy) {
+          (r.timeline || []).forEach((v) => {
+            html += `<td class="sym ${symbolClass(v)}">${escapeHtml(v)}</td>`;
+          });
+        } else {
+          buckets.forEach((b) => {
+            const active = overlaps(r.startDate, r.endDate, b.start, b.end);
+            const start = isBetween(r.startDate, b.start, b.end);
+            const end = isBetween(r.endDate, b.start, b.end);
+            const milestone = isBetween(r.milestoneDate, b.start, b.end);
+            const todayBucket = isTodayBucket(b, today);
+            const todayInTask = todayBucket && isBetween(today, r.startDate, r.endDate);
+            let cls = "gantt-cell";
+            if (active) cls += " active";
+            if (start) cls += " start";
+            if (end) cls += " end";
+            if (todayBucket) cls += " today-col";
+            cls += " " + statusClass(r.status);
+            html += `<td class="${cls}">`;
+            html += `<div class="gantt-track"></div>`;
+            if (todayBucket) html += `<div class="today-line"></div>`;
+            if (todayInTask) html += `<div class="gantt-dot today-dot"></div>`;
+            if (milestone) html += `<div class="gantt-dot milestone-dot"></div>`;
+            html += `</td>`;
+          });
+        }
+        html += "</tr>";
+      });
+
+      html += "</tbody>";
+      els.ganttGrid.innerHTML = html;
+    }
+
+    function renderSummary() {
+      const counts = { total: filtered.length };
+      filtered.forEach((r) => {
+        const key = statusKey(r.status) || "unknown";
+        counts[key] = (counts[key] || 0) + 1;
+      });
+
+      const cards = [
+        { label: "Total", value: counts.total, css: "status-default" },
+        { label: "Not Started", value: counts["not-started"] || 0, css: "status-not-started" },
+        { label: "Planned", value: counts["planned"] || 0, css: "status-planned" },
+        { label: "In Progress", value: counts["in-progress"] || 0, css: "status-in-progress" },
+        { label: "In Review", value: counts["in-review"] || 0, css: "status-in-review" },
+        { label: "Blocked", value: counts["blocked"] || 0, css: "status-blocked" },
+        { label: "Overdue", value: countOverdue(filtered), css: "status-blocked" },
+        { label: "Due This Week", value: countDueThisWeek(filtered), css: "status-in-review" },
+        { label: "Completed", value: (counts["completed"] || 0) + (counts["done"] || 0), css: "status-completed" },
+      ];
+
+      els.summaryWrap.innerHTML = cards
+        .map((c) => `
             <div class="summary-card">
               <div class="summary-label">${escapeHtml(c.label)}</div>
               <div class="summary-value"><span class="status-badge ${c.css}">${c.value}</span></div>
             </div>
           `)
-          .join("");
-      }
+        .join("");
+    }
 
-      function isTodayBucket(bucket, today) {
-        return !!bucket && isBetween(today, bucket.start, bucket.end);
-      }
+    function isTodayBucket(bucket, today) {
+      return !!bucket && isBetween(today, bucket.start, bucket.end);
+    }
 
-      function overlaps(startA, endA, startB, endB) {
-        if (!startA || !endA || !startB || !endB) return false;
-        return startA <= endB && endA >= startB;
-      }
+    function overlaps(startA, endA, startB, endB) {
+      if (!startA || !endA || !startB || !endB) return false;
+      return startA <= endB && endA >= startB;
+    }
 
-      function isBetween(dateIso, startIso, endIso) {
-        if (!dateIso || !startIso || !endIso) return false;
-        return dateIso >= startIso && dateIso <= endIso;
-      }
+    function isBetween(dateIso, startIso, endIso) {
+      if (!dateIso || !startIso || !endIso) return false;
+      return dateIso >= startIso && dateIso <= endIso;
+    }
 
-      function symbolClass(v) {
-        if (v === "^") return "sym-milestone";
-        if (v === "o") return "sym-now";
-        if (v === ">") return "sym-run";
-        if (v === "<") return "sym-start";
-        return "";
-      }
+    function symbolClass(v) {
+      if (v === "^") return "sym-milestone";
+      if (v === "o") return "sym-now";
+      if (v === ">") return "sym-run";
+      if (v === "<") return "sym-start";
+      return "";
+    }
 
-      function statusKey(status) {
-        return String(status || "")
-          .toLowerCase()
-          .replaceAll(/[^a-z0-9]+/g, "-")
-          .replaceAll(/^-+|-+$/g, "");
-      }
+    function statusKey(status) {
+      return String(status || "")
+        .toLowerCase()
+        .replaceAll(/[^a-z0-9]+/g, "-")
+        .replaceAll(/^-+|-+$/g, "");
+    }
 
-      function statusClass(status) {
-        const key = statusKey(status);
-        const allowed = [
-          "planned",
-          "not-started",
-          "in-progress",
-          "draft",
-          "in-review",
-          "done",
-          "completed",
-          "blocked",
-        ];
-        return allowed.includes(key) ? `status-${key}` : "status-default";
-      }
+    function statusClass(status) {
+      const key = statusKey(status);
+      const allowed = [
+        "planned",
+        "not-started",
+        "in-progress",
+        "draft",
+        "in-review",
+        "done",
+        "completed",
+        "blocked",
+      ];
+      return allowed.includes(key) ? `status-${key}` : "status-default";
+    }
 
-      function renderStatusBadge(status) {
-        return `<span class="status-badge ${statusClass(status)}">${escapeHtml(status || "")}</span>`;
-      }
+    function renderStatusBadge(status) {
+      return `<span class="status-badge ${statusClass(status)}">${escapeHtml(status || "")}</span>`;
+    }
 
-      function isCompletedStatus(status) {
-        const key = statusKey(status);
-        return key === "done" || key === "completed";
-      }
+    function isCompletedStatus(status) {
+      const key = statusKey(status);
+      return key === "done" || key === "completed";
+    }
 
-      function countOverdue(rows) {
-        const today = toIsoDate(new Date());
-        return (rows || []).filter((r) => r.endDate && r.endDate < today && !isCompletedStatus(r.status)).length;
-      }
+    function countOverdue(rows) {
+      const today = toIsoDate(new Date());
+      return (rows || []).filter((r) => r.endDate && r.endDate < today && !isCompletedStatus(r.status)).length;
+    }
 
-      function countDueThisWeek(rows) {
-        const now = new Date();
-        const day = (now.getDay() + 6) % 7; // Monday=0
-        const start = new Date(now);
-        start.setDate(now.getDate() - day);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        const startIso = toIsoDate(start);
-        const endIso = toIsoDate(end);
-        return (rows || []).filter((r) => r.endDate && r.endDate >= startIso && r.endDate <= endIso).length;
-      }
+    function countDueThisWeek(rows) {
+      const now = new Date();
+      const day = (now.getDay() + 6) % 7; // Monday=0
+      const start = new Date(now);
+      start.setDate(now.getDate() - day);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      const startIso = toIsoDate(start);
+      const endIso = toIsoDate(end);
+      return (rows || []).filter((r) => r.endDate && r.endDate >= startIso && r.endDate <= endIso).length;
+    }
 
-      function toIsoDate(date) {
-        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-        return local.toISOString().slice(0, 10);
-      }
+    function toIsoDate(date) {
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
 
-      function escapeHtml(v) {
-        return String(v || "")
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
-      }
+    function escapeHtml(v) {
+      return String(v || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
 
-      [els.searchInput, els.phaseFilter, els.siteFilter, els.priorityFilter, els.statusFilter]
-        .forEach((el) => el.addEventListener("input", applyFilters));
-      els.refreshBtn.addEventListener("click", () => load(true));
-      load(false);
-    </script>
-  </body>
+    [els.searchInput, els.phaseFilter, els.siteFilter, els.priorityFilter, els.statusFilter]
+      .forEach((el) => el.addEventListener("input", applyFilters));
+    els.refreshBtn.addEventListener("click", () => load(true));
+    load(false);
+  </script>
+</body>
+
 </html>

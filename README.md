@@ -21,12 +21,6 @@ Sheet model:
 - `Schedule`
 - Headers: `ID`, `Title`, `Start Date`, `End Date`, `Owner`, `Department`, `Status`, `Description`, `Tags`
 
-Source preference support:
-- Users can choose source Spreadsheet ID and source sheet in the UI.
-- Optional defaults can be set in a `Config` sheet:
-  - `standard_source_spreadsheet_id`
-  - `standard_source_sheet_name`
-
 Guide:
 - See `USER_GUIDE.md`
 
