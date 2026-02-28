@@ -19,7 +19,7 @@ const SETUP_REQUIRED_HEADERS = [
   'Tags',
 ];
 
-const SETUP_STATUS_VALUES = ['Planned', 'In Progress', 'Done', 'Blocked'];
+const SETUP_STATUS_VALUES = ['Not Started', 'In Progress', 'At Risk', 'Blocked', 'Completed'];
 const SETUP_DEPARTMENT_VALUES = ['Engineering', 'Product', 'Mechanical', 'Quality', 'Management'];
 
 function registerScheduleToolsMenu_() {

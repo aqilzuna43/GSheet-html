@@ -53,6 +53,11 @@
         align-items: center;
         gap: 10px;
       }
+      .toolbar-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+      }
 
       .toolbar h1 {
         margin: 0 auto 0 0;
@@ -82,17 +87,49 @@
         font-size: 13px;
         color: var(--muted);
       }
-
-      .layout {
-        display: grid;
-        grid-template-columns: minmax(280px, 1.2fr) minmax(320px, 1fr);
-        gap: 14px;
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--ink);
       }
+      .chip-row {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-top: 2px;
+      }
+      .chip {
+        height: 30px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        padding: 0 10px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+      }
+      .chip.active {
+        background: var(--accent-soft);
+        border-color: #7fcfbe;
+      }
+
       .summary-wrap {
         padding: 12px 14px;
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
+      }
+      .section-head {
+        padding: 12px 14px 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .critical-wrap {
+        padding: 10px 14px 14px;
       }
       .summary-card {
         border: 1px solid var(--line);
@@ -113,6 +150,12 @@
 
       #calendar {
         padding: 14px;
+      }
+      .calendar-head {
+        padding: 10px 14px 0;
+      }
+      .hidden {
+        display: none;
       }
 
       .table-wrap {
@@ -149,24 +192,24 @@
         font-size: 12px;
         border: 1px solid transparent;
       }
-      .status-planned,
       .status-not-started {
         background: #eef2ff;
         color: #3730a3;
         border-color: #c7d2fe;
       }
       .status-in-progress,
+      .status-planned,
       .status-draft {
         background: #ecfeff;
         color: #155e75;
         border-color: #a5f3fc;
       }
+      .status-at-risk,
       .status-in-review {
         background: #fff7ed;
         color: #9a3412;
         border-color: #fdba74;
       }
-      .status-done,
       .status-completed {
         background: #ecfdf5;
         color: #166534;
@@ -250,12 +293,12 @@
       .gantt-cell.active .gantt-track { background: #9fdbc8; }
       
       /* Ensure status colors only apply to active cells */
-      .gantt-cell.active.status-planned .gantt-track,
       .gantt-cell.active.status-not-started .gantt-track { background: #c7d2fe; }
       .gantt-cell.active.status-in-progress .gantt-track,
+      .gantt-cell.active.status-planned .gantt-track,
       .gantt-cell.active.status-draft .gantt-track { background: #a5f3fc; }
+      .gantt-cell.active.status-at-risk .gantt-track,
       .gantt-cell.active.status-in-review .gantt-track { background: #fdba74; }
-      .gantt-cell.active.status-done .gantt-track,
       .gantt-cell.active.status-completed .gantt-track { background: #86efac; }
       .gantt-cell.active.status-blocked .gantt-track { background: #fca5a5; }
       
@@ -319,57 +362,88 @@
         margin-top: -4px;
       }
 
-      @media (max-width: 980px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
-      }
     </style>
   </head>
   <body>
     <div class="page">
-      <div class="card toolbar">
+      <div class="card toolbar toolbar-sticky">
         <h1><?= pageTitle ?></h1>
         <input id="searchInput" class="control" placeholder="Search title, ID, tags..." />
         <select id="ownerFilter" class="control"><option value="">All Owners</option></select>
         <select id="deptFilter" class="control"><option value="">All Departments</option></select>
         <select id="statusFilter" class="control"><option value="">All Statuses</option></select>
+        <label class="toggle"><input id="criticalOnlyToggle" type="checkbox" />Critical Only</label>
+        <input id="sourceSpreadsheetId" class="control" placeholder="Source Spreadsheet ID (optional)" />
+        <input id="sourceSheetName" class="control" placeholder="Source Sheet (default: Schedule)" />
+        <button id="applySourceBtn">Apply Source</button>
+        <button id="resetSourceBtn">Reset Source</button>
         <button id="refreshBtn">Refresh</button>
         <span id="statusText" class="status">Loading...</span>
+        <div class="chip-row" id="quickChips">
+          <button class="chip active" data-quick="all">All</button>
+          <button class="chip" data-quick="critical">Critical</button>
+          <button class="chip" data-quick="overdue">Overdue</button>
+          <button class="chip" data-quick="due-week">Due This Week</button>
+          <button class="chip" data-quick="blocked">Blocked</button>
+        </div>
       </div>
 
       <div class="card summary-wrap" id="summaryWrap"></div>
 
-      <div class="layout">
-        <div class="card" id="calendar"></div>
-
-        <div class="card table-wrap">
+      <div class="card">
+        <div class="section-head">Critical Items (Blocked, At Risk, Overdue)</div>
+        <div class="critical-wrap">
           <table>
             <thead>
               <tr>
-                <th data-sort="id">ID</th>
-                <th data-sort="title">Title</th>
-                <th data-sort="startDate">Start</th>
-                <th data-sort="endDate">End</th>
-                <th data-sort="owner">Owner</th>
-                <th data-sort="department">Department</th>
-                <th data-sort="status">Status</th>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Owner</th>
+                <th>End</th>
+                <th>Status</th>
+                <th>Reason</th>
               </tr>
             </thead>
-            <tbody id="tableBody"></tbody>
+            <tbody id="criticalBody"></tbody>
           </table>
-          <div class="pagination">
-            <span id="pageLabel"></span>
-            <div>
-              <button id="prevBtn">Prev</button>
-              <button id="nextBtn">Next</button>
-            </div>
+        </div>
+      </div>
+
+      <div class="card table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="id">ID</th>
+              <th data-sort="title">Title</th>
+              <th data-sort="startDate">Start</th>
+              <th data-sort="endDate">End</th>
+              <th data-sort="owner">Owner</th>
+              <th data-sort="department">Department</th>
+              <th data-sort="status">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="pagination">
+          <span id="pageLabel"></span>
+          <div>
+            <button id="prevBtn">Prev</button>
+            <button id="nextBtn">Next</button>
           </div>
         </div>
       </div>
 
       <div class="card gantt-wrap">
         <table id="ganttGrid" class="gantt-grid"></table>
+      </div>
+
+      <div class="card">
+        <div class="calendar-head">
+          <button id="calendarToggleBtn">Show Calendar</button>
+        </div>
+        <div id="calendarContainer" class="hidden">
+          <div id="calendar"></div>
+        </div>
       </div>
     </div>
 
@@ -397,6 +471,15 @@
       let page = 1;
       const pageSize = 10;
       let calendar;
+      let calendarVisible = false;
+      let calendarInitialized = false;
+      let quickMode = "all";
+      const SOURCE_PREFS_KEY = "general_source_prefs_v1";
+      const templateDefaultSource = {
+        spreadsheetId: <?= JSON.stringify(defaultSourceSpreadsheetId) ?>,
+        sheetName: <?= JSON.stringify(defaultSourceSheetName) ?>,
+      };
+      let sourcePrefs = { spreadsheetId: "", sheetName: "" };
 
       const els = {
         tableBody: document.getElementById("tableBody"),
@@ -407,6 +490,15 @@
         ownerFilter: document.getElementById("ownerFilter"),
         deptFilter: document.getElementById("deptFilter"),
         statusFilter: document.getElementById("statusFilter"),
+        sourceSpreadsheetId: document.getElementById("sourceSpreadsheetId"),
+        sourceSheetName: document.getElementById("sourceSheetName"),
+        applySourceBtn: document.getElementById("applySourceBtn"),
+        resetSourceBtn: document.getElementById("resetSourceBtn"),
+        criticalOnlyToggle: document.getElementById("criticalOnlyToggle"),
+        quickChips: document.getElementById("quickChips"),
+        criticalBody: document.getElementById("criticalBody"),
+        calendarContainer: document.getElementById("calendarContainer"),
+        calendarToggleBtn: document.getElementById("calendarToggleBtn"),
         refreshBtn: document.getElementById("refreshBtn"),
         statusText: document.getElementById("statusText"),
         ganttGrid: document.getElementById("ganttGrid"),
@@ -422,6 +514,7 @@
           eventClick: (info) => openModal(info.event.extendedProps.row),
         });
         calendar.render();
+        calendarInitialized = true;
       }
 
       function setStatus(message, isError) {
@@ -436,12 +529,54 @@
             allItems = rows || [];
             buildFilterOptions();
             applyFilters();
-            setStatus(`Loaded ${allItems.length} item(s).`, false);
+            const sourceLabel = sourcePrefs.sheetName ? ` | source: ${sourcePrefs.sheetName}` : "";
+            setStatus(`Loaded ${allItems.length} item(s)${sourceLabel}.`, false);
           })
           .withFailureHandler((err) => {
             setStatus(err && err.message ? err.message : "Failed to load data.", true);
           })
-          .getScheduleItems(!!forceRefresh);
+          .getScheduleItems(!!forceRefresh, sourcePrefs);
+      }
+
+      function normalizeSourcePref(pref) {
+        return {
+          spreadsheetId: String((pref && pref.spreadsheetId) || "").trim(),
+          sheetName: String((pref && pref.sheetName) || "").trim(),
+        };
+      }
+
+      function readSourcePrefsFromStorage() {
+        try {
+          const raw = localStorage.getItem(SOURCE_PREFS_KEY);
+          if (!raw) return null;
+          return normalizeSourcePref(JSON.parse(raw));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function writeSourcePrefsToStorage(pref) {
+        localStorage.setItem(SOURCE_PREFS_KEY, JSON.stringify(normalizeSourcePref(pref)));
+      }
+
+      function readSourcePrefsFromInputs() {
+        return normalizeSourcePref({
+          spreadsheetId: els.sourceSpreadsheetId.value,
+          sheetName: els.sourceSheetName.value,
+        });
+      }
+
+      function setSourceInputs(pref) {
+        const normalized = normalizeSourcePref(pref);
+        els.sourceSpreadsheetId.value = normalized.spreadsheetId;
+        els.sourceSheetName.value = normalized.sheetName;
+      }
+
+      function initSourcePrefs() {
+        const stored = readSourcePrefsFromStorage();
+        const defaults = normalizeSourcePref(templateDefaultSource);
+        sourcePrefs = stored || defaults;
+        setSourceInputs(sourcePrefs);
       }
 
       function buildFilterOptions() {
@@ -473,8 +608,9 @@
         const owner = els.ownerFilter.value;
         const dept = els.deptFilter.value;
         const status = els.statusFilter.value;
+        const criticalOnly = !!els.criticalOnlyToggle.checked;
 
-        viewItems = allItems.filter((row) => {
+        const baseItems = allItems.filter((row) => {
           if (owner && row.owner !== owner) return false;
           if (dept && row.department !== dept) return false;
           if (status && row.status !== status) return false;
@@ -490,12 +626,54 @@
           ].join(" ").toLowerCase().includes(search);
         });
 
+        let filtered = baseItems;
+        if (quickMode === "critical") filtered = filtered.filter(isCriticalItem);
+        if (quickMode === "overdue") filtered = filtered.filter(isOverdueItem);
+        if (quickMode === "due-week") filtered = filtered.filter(isDueThisWeekItem);
+        if (quickMode === "blocked") filtered = filtered.filter((r) => statusKey(r.status) === "blocked");
+        if (criticalOnly) filtered = filtered.filter(isCriticalItem);
+
+        viewItems = filtered;
         sortRows();
         page = 1;
+        renderCriticalList(baseItems);
         renderTable();
         renderCalendar();
         renderSummary();
         renderGantt();
+      }
+
+      function renderCriticalList(baseItems) {
+        const rows = (baseItems || [])
+          .filter(isCriticalItem)
+          .sort((a, b) => {
+            if (isBlocked(a) !== isBlocked(b)) return isBlocked(a) ? -1 : 1;
+            if (isAtRisk(a) !== isAtRisk(b)) return isAtRisk(a) ? -1 : 1;
+            return String(a.endDate || "").localeCompare(String(b.endDate || ""));
+          })
+          .slice(0, 12);
+
+        els.criticalBody.innerHTML = "";
+        if (!rows.length) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = '<td colspan="6">No critical items in current filter scope.</td>';
+          els.criticalBody.appendChild(tr);
+          return;
+        }
+
+        rows.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(row.id)}</td>
+            <td>${escapeHtml(row.title)}</td>
+            <td>${escapeHtml(row.owner)}</td>
+            <td>${escapeHtml(row.endDate)}</td>
+            <td>${renderStatusBadge(row.status)}</td>
+            <td>${escapeHtml(criticalReason(row))}</td>
+          `;
+          tr.addEventListener("click", () => openModal(row));
+          els.criticalBody.appendChild(tr);
+        });
       }
 
       function sortRows() {
@@ -550,6 +728,7 @@
           extendedProps: { row: row },
         }));
         calendar.addEventSource(events);
+        calendar.updateSize();
       }
 
       function addOneDay(isoDate) {
@@ -611,12 +790,11 @@
         const cards = [
           { label: "Total", value: counts.total, css: "status-default" },
           { label: "Not Started", value: counts["not-started"] || 0, css: "status-not-started" },
-          { label: "Planned", value: counts["planned"] || 0, css: "status-planned" },
           { label: "In Progress", value: counts["in-progress"] || 0, css: "status-in-progress" },
-          { label: "In Review", value: counts["in-review"] || 0, css: "status-in-review" },
+          { label: "At Risk", value: (counts["at-risk"] || 0) + (counts["in-review"] || 0), css: "status-at-risk" },
           { label: "Blocked", value: counts["blocked"] || 0, css: "status-blocked" },
           { label: "Overdue", value: countOverdue(viewItems), css: "status-blocked" },
-          { label: "Due This Week", value: countDueThisWeek(viewItems), css: "status-in-review" },
+          { label: "Due This Week", value: countDueThisWeek(viewItems), css: "status-at-risk" },
           { label: "Completed", value: (counts["completed"] || 0) + (counts["done"] || 0), css: "status-completed" },
         ];
 
@@ -718,16 +896,56 @@
       function statusClass(status) {
         const key = statusKey(status);
         const allowed = [
-          "planned",
           "not-started",
           "in-progress",
+          "at-risk",
+          "completed",
+          "blocked",
+          // Backward-compatible aliases from older pilot values
+          "planned",
           "draft",
           "in-review",
           "done",
-          "completed",
-          "blocked",
         ];
         return allowed.includes(key) ? `status-${key}` : "status-default";
+      }
+
+      function isBlocked(row) {
+        return statusKey(row.status) === "blocked";
+      }
+
+      function isAtRisk(row) {
+        const key = statusKey(row.status);
+        return key === "at-risk" || key === "in-review";
+      }
+
+      function isOverdueItem(row) {
+        const today = toIsoDate(new Date());
+        return !!row.endDate && row.endDate < today && !isCompletedStatus(row.status);
+      }
+
+      function isDueThisWeekItem(row) {
+        const now = new Date();
+        const day = (now.getDay() + 6) % 7;
+        const start = new Date(now);
+        start.setDate(now.getDate() - day);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        const startIso = toIsoDate(start);
+        const endIso = toIsoDate(end);
+        return !!row.endDate && row.endDate >= startIso && row.endDate <= endIso;
+      }
+
+      function isCriticalItem(row) {
+        return isBlocked(row) || isAtRisk(row) || isOverdueItem(row);
+      }
+
+      function criticalReason(row) {
+        if (isBlocked(row)) return "Blocked";
+        if (isAtRisk(row)) return "At Risk";
+        if (isOverdueItem(row)) return "Overdue";
+        return "";
       }
 
       function renderStatusBadge(status) {
@@ -736,9 +954,9 @@
 
       function statusColor(status) {
         const key = statusKey(status);
-        if (key === "planned" || key === "not-started") return "#c7d2fe";
-        if (key === "in-progress" || key === "draft") return "#a5f3fc";
-        if (key === "in-review") return "#fdba74";
+        if (key === "not-started") return "#c7d2fe";
+        if (key === "in-progress" || key === "planned" || key === "draft") return "#a5f3fc";
+        if (key === "at-risk" || key === "in-review") return "#fdba74";
         if (key === "done" || key === "completed") return "#86efac";
         if (key === "blocked") return "#fca5a5";
         return "#99f6e4";
@@ -755,16 +973,29 @@
       }
 
       function countDueThisWeek(rows) {
-        const now = new Date();
-        const day = (now.getDay() + 6) % 7; // Monday=0
-        const start = new Date(now);
-        start.setDate(now.getDate() - day);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(start);
-        end.setDate(start.getDate() + 6);
-        const startIso = toIsoDate(start);
-        const endIso = toIsoDate(end);
-        return rows.filter((r) => r.endDate && r.endDate >= startIso && r.endDate <= endIso).length;
+        return rows.filter(isDueThisWeekItem).length;
+      }
+
+      function setQuickMode(mode) {
+        quickMode = mode || "all";
+        document.querySelectorAll("#quickChips .chip").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.quick === quickMode);
+        });
+        applyFilters();
+      }
+
+      function setCalendarVisible(visible) {
+        calendarVisible = !!visible;
+        els.calendarContainer.classList.toggle("hidden", !calendarVisible);
+        els.calendarToggleBtn.textContent = calendarVisible ? "Hide Calendar" : "Show Calendar";
+        if (calendarVisible) {
+          if (!calendarInitialized) {
+            initCalendar();
+          } else {
+            calendar.updateSize();
+          }
+          renderCalendar();
+        }
       }
 
       function bindEvents() {
@@ -796,13 +1027,30 @@
           });
         });
         els.refreshBtn.addEventListener("click", () => loadData(true));
+        els.criticalOnlyToggle.addEventListener("change", applyFilters);
+        els.quickChips.querySelectorAll(".chip").forEach((btn) => {
+          btn.addEventListener("click", () => setQuickMode(btn.dataset.quick));
+        });
+        els.calendarToggleBtn.addEventListener("click", () => setCalendarVisible(!calendarVisible));
+        els.applySourceBtn.addEventListener("click", () => {
+          sourcePrefs = readSourcePrefsFromInputs();
+          writeSourcePrefsToStorage(sourcePrefs);
+          loadData(true);
+        });
+        els.resetSourceBtn.addEventListener("click", () => {
+          localStorage.removeItem(SOURCE_PREFS_KEY);
+          sourcePrefs = normalizeSourcePref(templateDefaultSource);
+          setSourceInputs(sourcePrefs);
+          loadData(true);
+        });
         document.getElementById("modalClose").addEventListener("click", closeModal);
         document.getElementById("modalBackdrop").addEventListener("click", (e) => {
           if (e.target.id === "modalBackdrop") closeModal();
         });
       }
 
-      initCalendar();
+      setCalendarVisible(false);
+      initSourcePrefs();
       bindEvents();
       loadData(false);
     </script>
